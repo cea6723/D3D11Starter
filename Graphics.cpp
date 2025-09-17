@@ -117,9 +117,9 @@ HRESULT Graphics::Initialize(unsigned int windowWidth, unsigned int windowHeight
 		D3D11_SDK_VERSION,			// Current version of the SDK
 		&swapDesc,					// Address of swap chain options
 		SwapChain.GetAddressOf(),	// Pointer to our Swap Chain pointer
-		Device.GetAddressOf(),		// Pointer to our Device pointer
-		&featureLevel,				// Retrieve exact API feature level in use
-		Context.GetAddressOf());	// Pointer to our Device Context pointer
+		(ID3D11Device**)Device.GetAddressOf(),	// Pointer to our Device pointer
+		&featureLevel,							// Retrieve exact API feature level in use
+		(ID3D11DeviceContext**)Context.GetAddressOf());	// Pointer to our Device Context pointer
 	
 	// Did 11.1 initialization fail?  If so, try 11.0
 	if (hr == E_INVALIDARG)
@@ -134,9 +134,9 @@ HRESULT Graphics::Initialize(unsigned int windowWidth, unsigned int windowHeight
 			D3D11_SDK_VERSION,			// Current version of the SDK
 			&swapDesc,					// Address of swap chain options
 			SwapChain.GetAddressOf(),	// Pointer to our Swap Chain pointer
-			Device.GetAddressOf(),		// Pointer to our Device pointer
-			&featureLevel,				// Retrieve exact API feature level in use
-			Context.GetAddressOf());	// Pointer to our Device Context pointer
+			(ID3D11Device**)Device.GetAddressOf(),	// Pointer to our Device pointer
+			&featureLevel,							// Retrieve exact API feature level in use
+			(ID3D11DeviceContext**)Context.GetAddressOf());	// Pointer to our Device Context pointer
 	}
 	
 	// If it's still a failure, we're unable to initialize any version of Direct3D

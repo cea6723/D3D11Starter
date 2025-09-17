@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include <d3d11.h>
+#include <d3d11_1.h>
 #include <string>
 #include <wrl/client.h>
 
@@ -13,8 +13,8 @@ namespace Graphics
 	// --- GLOBAL VARS ---
 
 	// Primary D3D11 API objects
-	inline Microsoft::WRL::ComPtr<ID3D11Device> Device;
-	inline Microsoft::WRL::ComPtr<ID3D11DeviceContext> Context;
+	inline Microsoft::WRL::ComPtr<ID3D11Device1> Device;
+	inline Microsoft::WRL::ComPtr<ID3D11DeviceContext1> Context;
 	inline Microsoft::WRL::ComPtr<IDXGISwapChain> SwapChain;
 
 	// Rendering buffers
