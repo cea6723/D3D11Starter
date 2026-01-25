@@ -80,25 +80,6 @@ Game::~Game()
 	ImGui::DestroyContext();
 }
 
-void Game::ImGuiHelper(float deltaTime)
-{
-	// Put this all in a helper method that is called from Game::Update()
-	// Feed fresh data to ImGui
-	ImGuiIO& io = ImGui::GetIO();
-	io.DeltaTime = deltaTime;
-	io.DisplaySize.x = (float)Window::Width();
-	io.DisplaySize.y = (float)Window::Height();
-	// Reset the frame
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-	// Determine new input capture
-	Input::SetKeyboardCapture(io.WantCaptureKeyboard);
-	Input::SetMouseCapture(io.WantCaptureMouse);
-	// Show the demo window
-	ImGui::ShowDemoWindow();
-}
-
 
 // --------------------------------------------------------
 // Loads shaders from compiled shader object (.cso) files
@@ -273,6 +254,66 @@ void Game::OnResize()
 	
 }
 
+void Game::ImGuiHelper(float deltaTime)
+{
+	// Put this all in a helper method that is called from Game::Update()
+	// Feed fresh data to ImGui
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = deltaTime;
+	io.DisplaySize.x = (float)Window::Width();
+	io.DisplaySize.y = (float)Window::Height();
+	// Reset the frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+	// Determine new input capture
+	Input::SetKeyboardCapture(io.WantCaptureKeyboard);
+	Input::SetMouseCapture(io.WantCaptureMouse);
+	// Show the demo window
+	if (Game::isDemoVisible)
+	{
+		ImGui::ShowDemoWindow();
+	}
+}
+
+void Game::BuildUI()
+{
+	ImGui::Begin("Info");
+	{
+		if (ImGui::TreeNode("App Details"))
+		{
+			ImGui::Text("Frame rate: %f fps", ImGui::GetIO().Framerate);
+			ImGui::Text("Window Client Size: %ix%i", Window::Width(), Window::Height());
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Colors"))
+		{
+			ImGui::ColorEdit4("Background Color", bgColor);
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Other Stuff"))
+		{
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Colorful Text!");
+
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Stuff on"); ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "the same line??");
+
+			ImGui::RadioButton("this one", &radioValue, 0); ImGui::SameLine();
+			ImGui::RadioButton("that one", &radioValue, 1); ImGui::SameLine();
+			ImGui::RadioButton("another one", &radioValue, 2);
+
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "How many bananas could you eat rn?");
+			ImGui::DragInt("##drag", &dragNum, 1);
+
+			ImGui::TreePop();
+		}
+		if (ImGui::Button("Show ImGui Demo"))
+		{
+			Game::isDemoVisible = !Game::isDemoVisible;
+		}
+	}	
+	ImGui::End();
+}
 
 // --------------------------------------------------------
 // Update your game here - user input, move objects, AI, etc.
@@ -280,6 +321,7 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	ImGuiHelper(deltaTime);
+	BuildUI();
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::KeyDown(VK_ESCAPE))
@@ -297,8 +339,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - At the beginning of Game::Draw() before drawing *anything*
 	{
 		// Clear the back buffer (erase what's on screen) and depth buffer
-		const float color[4] = { 0.4f, 0.6f, 0.75f, 0.0f };
-		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(),	color);
+		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(),	Game::bgColor);
 		Graphics::Context->ClearDepthStencilView(Graphics::DepthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
