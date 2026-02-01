@@ -2,6 +2,10 @@
 
 #include <d3d11.h>
 #include <wrl/client.h>
+#include <vector>
+#include <memory>
+
+#include "Mesh.h"
 
 class Game
 {
@@ -38,6 +42,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+
+	std::vector<std::shared_ptr<Mesh>> meshes;
 
 	// Fields
 	float bgColor[4] = { 0.4f, 0.6f, 0.75f, 1.0f };
