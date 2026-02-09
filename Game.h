@@ -4,6 +4,7 @@
 #include <wrl/client.h>
 #include <vector>
 #include <memory>
+#include <DirectXMath.h>
 
 #include "Mesh.h"
 
@@ -48,6 +49,8 @@ private:
 
 	// Fields
 	float bgColor[4] = { 0.4f, 0.6f, 0.75f, 1.0f };
+	float colorTint[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+	float offset[3] = {};
 	bool isDemoVisible = false;
 	int radioValue = 0;
 	int dragNum = 0;

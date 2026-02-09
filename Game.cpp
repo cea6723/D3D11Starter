@@ -261,11 +261,25 @@ void Game::BuildUI()
 		{
 			ImGui::Text("Frame rate: %f fps", ImGui::GetIO().Framerate);
 			ImGui::Text("Window Client Size: %ix%i", Window::Width(), Window::Height());
+			ImGui::ColorEdit4("Background Color", bgColor);
 			ImGui::TreePop();
 		}
-		if (ImGui::TreeNode("Colors"))
+		if (ImGui::TreeNode("Meshes"))
 		{
-			ImGui::ColorEdit4("Background Color", bgColor);
+			ImGui::ColorEdit4("Color Tint", colorTint);
+			ImGui::SliderFloat3("Offset", offset, -1.0f, 1.0f);
+			for (int i = 0; i < meshes.size(); i++)
+			{
+				ImGui::PushID(i);
+				if (ImGui::TreeNode(meshes[i]->GetName()))
+				{
+					ImGui::Text("Triangles: %i", meshes[i]->GetIndexCount() / 3);
+					ImGui::Text("Vertices: %i", meshes[i]->GetVertexCount());
+					ImGui::Text("Indices: %i", meshes[i]->GetIndexCount());
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
 			ImGui::TreePop();
 		}
 		if (ImGui::TreeNode("Other Stuff"))
@@ -282,22 +296,6 @@ void Game::BuildUI()
 			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "How many bananas could you eat rn?");
 			ImGui::DragInt("##drag", &dragNum, 1);
 
-			ImGui::TreePop();
-		}
-		if (ImGui::TreeNode("Meshes"))
-		{
-			for (int i = 0; i < meshes.size(); i++)
-			{
-				ImGui::PushID(i);
-				if (ImGui::TreeNode(meshes[i]->GetName()))
-				{
-					ImGui::Text("Triangles: %i", meshes[i]->GetIndexCount() / 3);
-					ImGui::Text("Vertices: %i", meshes[i]->GetVertexCount());
-					ImGui::Text("Indices: %i", meshes[i]->GetIndexCount());
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-			}
 			ImGui::TreePop();
 		}
 		if (ImGui::Button("Show ImGui Demo"))
@@ -337,8 +335,8 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// copy fresh data to contant buffer
 		ShaderData vsData;
-		vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
-		vsData.offset = XMFLOAT3(0.25f, 0.0f, 0.0f);
+		vsData.colorTint = XMFLOAT4(colorTint);
+		vsData.offset = XMFLOAT3(offset);
 
 		D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
 		Graphics::Context->Map(constBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
