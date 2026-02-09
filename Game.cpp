@@ -5,6 +5,7 @@
 #include "PathHelpers.h"
 #include "Window.h"
 #include "Mesh.h"
+#include "BufferStructs.h"
 
 #include <DirectXMath.h>
 
@@ -53,6 +54,26 @@ Game::Game()
 		//    these calls will need to happen multiple times per frame
 		Graphics::Context->VSSetShader(vertexShader.Get(), 0, 0);
 		Graphics::Context->PSSetShader(pixelShader.Get(), 0, 0);
+	}
+
+	// Constant Buffer
+	{
+		// calculate size
+		unsigned int size = sizeof(ShaderData);
+		size = (size + 15) / 16 * 16;
+
+		// describe
+		D3D11_BUFFER_DESC cbDesc = {};
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.ByteWidth = size;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		
+		// create
+		Graphics::Device->CreateBuffer(&cbDesc, 0, constBuffer.GetAddressOf());
+
+		// bind
+		Graphics::Context->VSSetConstantBuffers(0, 1, constBuffer.GetAddressOf());
 	}
 
 	// Initialize ImGui itself & platform/renderer backends
@@ -313,6 +334,18 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Clear the back buffer (erase what's on screen) and depth buffer
 		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(),	Game::bgColor);
 		Graphics::Context->ClearDepthStencilView(Graphics::DepthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+		// copy fresh data to contant buffer
+		ShaderData vsData;
+		vsData.colorTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
+		vsData.offset = XMFLOAT3(0.25f, 0.0f, 0.0f);
+
+		D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+		Graphics::Context->Map(constBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+
+		memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
+
+		Graphics::Context->Unmap(constBuffer.Get(), 0);
 	}
 
 	// DRAW geometry
