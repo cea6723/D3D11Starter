@@ -197,10 +197,10 @@ void Game::CreateGeometry()
 
 	Vertex squareVertices[] =
 	{
-		{ XMFLOAT3(+0.3f, +0.5f, +0.0f), red },
-		{ XMFLOAT3(+0.6f, +0.5f, +0.0f), blue },
-		{ XMFLOAT3(+0.6f, -0.0f, +0.0f), green },
-		{ XMFLOAT3(+0.3f, -0.0f, +0.0f), white },
+		{ XMFLOAT3(-0.25f, +0.25f, +0.0f), red },
+		{ XMFLOAT3(+0.25f, +0.25f, +0.0f), blue },
+		{ XMFLOAT3(+0.25f, -0.25f, +0.0f), green },
+		{ XMFLOAT3(-0.25f, -0.25f, +0.0f), white },
 	};
 	unsigned int squareIndices[] = { 0, 1, 3, 1, 2, 3 };
 
@@ -219,6 +219,15 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>("Square", squareVertices, 4, squareIndices, 6));
 	meshes.push_back(std::make_shared<Mesh>("Weird thing", weirdShapeVerts, 6, weirdShapeInds, 12));
 
+	// create GameEntities
+	entities.push_back(GameEntity(meshes[0]));
+	entities.push_back(GameEntity(meshes[0]));
+	entities.push_back(GameEntity(meshes[1]));
+	entities.push_back(GameEntity(meshes[1]));
+	entities.push_back(GameEntity(meshes[2]));
+
+	entities[1].GetTransform()->MoveAbsolute(-0.5f, 0.0f, 0.0f);
+	entities[2].GetTransform()->MoveAbsolute(0.25f, 0.25f, 0.0f);
 }
 
 
@@ -314,6 +323,17 @@ void Game::Update(float deltaTime, float totalTime)
 	ImGuiHelper(deltaTime);
 	BuildUI();
 
+	// move entities
+	float scale = (float)sin(totalTime) * 0.5f + 0.8f;
+	entities[0].GetTransform()->SetPosition((float)sin(totalTime), 0, 0);
+	entities[1].GetTransform()->SetScale(scale, scale, scale);
+	entities[2].GetTransform()->Rotate(0, 0, deltaTime * 1.0f);
+	entities[3].GetTransform()->SetPosition(0.25f, (float)sin(totalTime), 0);
+	
+	entities[4].GetTransform()->SetPosition((float)sin(totalTime), (float)sin(totalTime), 0);
+	entities[4].GetTransform()->SetScale(scale, scale, scale);
+	entities[4].GetTransform()->Rotate(0, 0, deltaTime * 1.0f);
+
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::KeyDown(VK_ESCAPE))
 		Window::Quit();
@@ -332,27 +352,28 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Clear the back buffer (erase what's on screen) and depth buffer
 		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(),	Game::bgColor);
 		Graphics::Context->ClearDepthStencilView(Graphics::DepthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-		// copy fresh data to contant buffer
-		ShaderData vsData;
-		vsData.colorTint = XMFLOAT4(colorTint);
-		vsData.offset = XMFLOAT3(offset);
-
-		D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-		Graphics::Context->Map(constBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-
-		memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-
-		Graphics::Context->Unmap(constBuffer.Get(), 0);
 	}
 
 	// DRAW geometry
 	// - These steps are generally repeated for EACH object you draw
 	// - Other Direct3D calls will also be necessary to do more complex things
 	{
-		for (int i = 0; i < meshes.size(); i++)
+		for (int i = 0; i < entities.size(); i++)
 		{
-			meshes[i]->Draw();
+			// copy fresh data to contant buffer
+			ShaderData vsData = {};
+			vsData.colorTint = XMFLOAT4(colorTint);
+			vsData.worldMat = entities[i].GetTransform()->GetWorldMatrix();
+
+			D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+			Graphics::Context->Map(constBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+
+			memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
+
+			Graphics::Context->Unmap(constBuffer.Get(), 0);
+
+			// DRAW
+			entities[i].GetMesh()->Draw();
 		}
 	}
 

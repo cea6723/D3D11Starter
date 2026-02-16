@@ -7,6 +7,7 @@
 #include <DirectXMath.h>
 
 #include "Mesh.h"
+#include "GameEntity.h"
 
 class Game
 {
@@ -46,6 +47,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
+	std::vector<GameEntity> entities;
 
 	// Fields
 	float bgColor[4] = { 0.4f, 0.6f, 0.75f, 1.0f };
