@@ -291,6 +291,30 @@ void Game::BuildUI()
 			}
 			ImGui::TreePop();
 		}
+		if (ImGui::TreeNode("Game Entities"))
+		{
+			for (int i = 0; i < entities.size(); i++)
+			{
+				ImGui::PushID(i);
+				char name[20];
+				sprintf_s(name, "Entity %i", i);
+				if (ImGui::TreeNode(name))
+				{
+					ImGui::Text("Mesh: %s", entities[i].GetMesh()->GetName());
+
+					XMFLOAT3 position = entities[i].GetTransform()->GetPosition();
+					XMFLOAT3 rotation = entities[i].GetTransform()->GetPitchYawRoll();
+					XMFLOAT3 scale = entities[i].GetTransform()->GetScale();
+
+					ImGui::DragFloat3("Position", &position.x);
+					ImGui::DragFloat3("Rotation (Radians)", &rotation.x);
+					ImGui::DragFloat3("Scale", &scale.x);
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
+			ImGui::TreePop();
+		}
 		if (ImGui::TreeNode("Other Stuff"))
 		{
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Colorful Text!");
