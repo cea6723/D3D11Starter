@@ -1,11 +1,16 @@
 #include "Transform.h"
 using namespace DirectX;
 
+
 Transform::Transform()
 {
 	position = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	rotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+
+	right = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	forward = XMFLOAT3(0.0f, 0.0f, 1.0f);
 
 	XMStoreFloat4x4(&world, XMMatrixIdentity());
 	XMStoreFloat4x4(&worldInverseTranspose, XMMatrixIdentity());
@@ -33,6 +38,7 @@ void Transform::SetRotation(float pitch, float yaw, float roll)
 void Transform::SetRotation(DirectX::XMFLOAT3 _rotation)
 {
 	rotation = _rotation;
+	UpdateVectors();
 
 	isDirty = true;
 }
@@ -62,6 +68,21 @@ DirectX::XMFLOAT3 Transform::GetPitchYawRoll()
 DirectX::XMFLOAT3 Transform::GetScale()
 {
 	return scale;
+}
+
+DirectX::XMFLOAT3 Transform::GetRight()
+{
+	return right;
+}
+
+DirectX::XMFLOAT3 Transform::GetUp()
+{
+	return up;
+}
+
+DirectX::XMFLOAT3 Transform::GetForward()
+{
+	return forward;
 }
 
 DirectX::XMFLOAT4X4 Transform::GetWorldMatrix()
@@ -103,6 +124,24 @@ void Transform::MoveAbsolute(DirectX::XMFLOAT3 offset)
 	isDirty = true;
 }
 
+void Transform::MoveRelative(float x, float y, float z)
+{
+	MoveRelative(XMFLOAT3(x, y, z));
+}
+
+void Transform::MoveRelative(DirectX::XMFLOAT3 offset)
+{
+	XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+	XMVECTOR offsetVec = XMLoadFloat3(&offset);
+	XMVECTOR posVec = XMLoadFloat3(&position);
+
+	offsetVec = XMVector3Rotate(offsetVec, rot);
+	posVec += offsetVec;
+	XMStoreFloat3(&position, posVec);
+
+	isDirty = true;
+}
+
 void Transform::Rotate(float pitch, float yaw, float roll)
 {
 	Rotate(XMFLOAT3(pitch, yaw, roll));
@@ -114,6 +153,8 @@ void Transform::Rotate(DirectX::XMFLOAT3 _rotation)
 	XMVECTOR pYRVec = XMLoadFloat3(&_rotation);
 	rotVec += pYRVec;
 	XMStoreFloat3(&rotation, rotVec);
+
+	UpdateVectors();
 
 	isDirty = true;
 }
@@ -131,4 +172,20 @@ void Transform::Scale(DirectX::XMFLOAT3 _scale)
 	XMStoreFloat3(&scale, scaleVec);
 
 	isDirty = true;
+}
+
+void Transform::UpdateVectors()
+{
+	XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+	XMVECTOR rightVec = XMLoadFloat3(&right);
+	XMVECTOR upVec = XMLoadFloat3(&up);
+	XMVECTOR forwardVec = XMLoadFloat3(&forward);
+
+	rightVec = XMVector3Rotate(rightVec, rot);
+	upVec = XMVector3Rotate(upVec, rot);
+	forwardVec = XMVector3Rotate(forwardVec, rot);
+
+	XMStoreFloat3(&right, rightVec);
+	XMStoreFloat3(&up, upVec);
+	XMStoreFloat3(&forward, forwardVec);
 }
