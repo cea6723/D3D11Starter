@@ -8,6 +8,7 @@
 
 #include "Mesh.h"
 #include "GameEntity.h"
+#include "Camera.h"
 
 class Game
 {
@@ -50,11 +51,13 @@ private:
 	std::vector<GameEntity> entities;
 
 	// Fields
+	std::vector<std::shared_ptr<Camera>> cameras;
+	std::shared_ptr<Camera> activeCamera;
 	float bgColor[4] = { 0.4f, 0.6f, 0.75f, 1.0f };
 	float colorTint[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 	float offset[3] = {};
 	bool isDemoVisible = false;
-	int radioValue = 0;
+	int activeIndex;
 	int dragNum = 0;
 };
 

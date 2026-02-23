@@ -85,6 +85,12 @@ Game::Game()
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
 	//ImGui::StyleColorsClassic();
+
+	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, 0.0f, -10.0f), XM_PIDIV4));
+	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, -5.0f, -5.0f), XM_PIDIV2));
+
+	activeCamera = cameras[0];
+	activeIndex = 0;
 }
 
 
@@ -237,7 +243,11 @@ void Game::CreateGeometry()
 // --------------------------------------------------------
 void Game::OnResize()
 {
-	
+	for (int i = 0; i < cameras.size(); i++)
+	{
+		if (cameras[i] != nullptr) cameras[i]->UpdateProjMatrix(Window::AspectRatio());
+	}
+
 }
 
 void Game::ImGuiHelper(float deltaTime)
@@ -271,6 +281,24 @@ void Game::BuildUI()
 			ImGui::Text("Frame rate: %f fps", ImGui::GetIO().Framerate);
 			ImGui::Text("Window Client Size: %ix%i", Window::Width(), Window::Height());
 			ImGui::ColorEdit4("Background Color", bgColor);
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Cameras"))
+		{		
+			for (int i = 0; i < cameras.size(); i++)
+			{
+				char name[20];
+				sprintf_s(name, "Camera %i", i);
+				ImGui::RadioButton(name, &activeIndex, i);
+			}
+			activeCamera = cameras[activeIndex];
+
+			ImGui::Text("Active Camera:");
+			XMFLOAT3 position = activeCamera->GetPosition();
+			float fov = activeCamera->GetFOV();
+			ImGui::DragFloat3("Position", &position.x);
+			ImGui::DragFloat("FOV", &fov);
+
 			ImGui::TreePop();
 		}
 		if (ImGui::TreeNode("Meshes"))
@@ -322,9 +350,9 @@ void Game::BuildUI()
 			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Stuff on"); ImGui::SameLine();
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "the same line??");
 
-			ImGui::RadioButton("this one", &radioValue, 0); ImGui::SameLine();
-			ImGui::RadioButton("that one", &radioValue, 1); ImGui::SameLine();
-			ImGui::RadioButton("another one", &radioValue, 2);
+			ImGui::RadioButton("this one", &activeIndex, 0); ImGui::SameLine();
+			ImGui::RadioButton("that one", &activeIndex, 1); ImGui::SameLine();
+			ImGui::RadioButton("another one", &activeIndex, 2);
 
 			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "How many bananas could you eat rn?");
 			ImGui::DragInt("##drag", &dragNum, 1);
@@ -346,6 +374,7 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	ImGuiHelper(deltaTime);
 	BuildUI();
+	activeCamera->Update(deltaTime);
 
 	// move entities
 	float scale = (float)sin(totalTime) * 0.5f + 0.8f;
@@ -388,6 +417,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			ShaderData vsData = {};
 			vsData.colorTint = XMFLOAT4(colorTint);
 			vsData.worldMat = entities[i].GetTransform()->GetWorldMatrix();
+			vsData.viewMat = activeCamera->GetViewMatrix();
+			vsData.projMat = activeCamera->GetProjMatrix();
 
 			D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
 			Graphics::Context->Map(constBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);

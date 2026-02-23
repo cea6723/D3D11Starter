@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include "Camera.h"
 using namespace DirectX;
 
 
@@ -177,9 +178,9 @@ void Transform::Scale(DirectX::XMFLOAT3 _scale)
 void Transform::UpdateVectors()
 {
 	XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-	XMVECTOR rightVec = XMLoadFloat3(&right);
-	XMVECTOR upVec = XMLoadFloat3(&up);
-	XMVECTOR forwardVec = XMLoadFloat3(&forward);
+	XMVECTOR rightVec = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR upVec = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMVECTOR forwardVec = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 
 	rightVec = XMVector3Rotate(rightVec, rot);
 	upVec = XMVector3Rotate(upVec, rot);

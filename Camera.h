@@ -25,10 +25,12 @@ private:
 	bool isPerspective;
 
 public:
-	Camera(float _aspectRatio, DirectX::XMFLOAT3 position);
+	Camera(float _aspectRatio, DirectX::XMFLOAT3 position, float _fov);
 
 	DirectX::XMFLOAT4X4 GetViewMatrix();
 	DirectX::XMFLOAT4X4 GetProjMatrix();
+	DirectX::XMFLOAT3 GetPosition();
+	float GetFOV();
 
 	void UpdateViewMatrix();
 	void UpdateProjMatrix(float aspectRatio);
