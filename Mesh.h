@@ -1,8 +1,13 @@
 #pragma once
 
+#include <DirectXMath.h>
 #include <d3d11.h>
 #include <wrl/client.h>
 #include <string>
+#include <fstream>
+#include <vector>
+#include <stdexcept>
+#include <unordered_map>
 
 #include "Graphics.h"
 #include "Vertex.h"
@@ -11,6 +16,7 @@ class Mesh
 {
 public:
 	Mesh(const char* _name, Vertex* vertices, int _verticesNum, unsigned int* indices, int _indiciesNum);
+	Mesh(const char* objFile);
 	~Mesh();
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer();
@@ -30,5 +36,7 @@ private:
 	int indiciesNum;
 
 	const char* name;
+
+	void CreateBuffers(Vertex* vertices, int _verticesNum, unsigned int* indices, int _indiciesNum);
 };
 

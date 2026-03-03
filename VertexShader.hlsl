@@ -14,13 +14,9 @@ cbuffer ExternalData : register(b0)
 // - Each variable must have a semantic, which defines its usage
 struct VertexShaderInput
 { 
-	// Data type
-	//  |
-	//  |   Name          Semantic
-	//  |    |                |
-	//  v    v                v
-	float3 localPosition	: POSITION;     // XYZ position
-	float4 color			: COLOR;        // RGBA color
+	float3 localPosition	: POSITION;
+    float2 uv               : TEXCOORD;
+    float3 normal           : NORMAL;
 };
 
 // Struct representing the data we're sending down the pipeline
@@ -65,7 +61,7 @@ VertexToPixel main( VertexShaderInput input )
 	// Pass the color through 
 	// - The values will be interpolated per-pixel by the rasterizer
 	// - We don't need to alter it here, but we do need to send it to the pixel shader
-	output.color = input.color * colorTint;
+	output.color = colorTint;
 
 	// Whatever we return will make its way through the pipeline to the
 	// next programmable stage we're using (the pixel shader for now)

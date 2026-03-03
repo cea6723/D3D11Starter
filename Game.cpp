@@ -29,8 +29,7 @@ using namespace DirectX;
 // --------------------------------------------------------
 Game::Game()
 {
-	LoadShaders();
-	CreateGeometry();
+	LoadContent();
 
 	// Constant Buffer
 	{
@@ -94,28 +93,26 @@ void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexSh
 		0,
 		vertexShader.GetAddressOf());
 
-	// Create an input layout 
-	//  - This describes the layout of data sent to a vertex shader
-	//  - In other words, it describes how to interpret data (numbers) in a vertex buffer
-	//  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-	//  - Luckily, we already have that loaded (the vertex shader blob above)
+	// Input Layout
 	{
-		D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
+		D3D11_INPUT_ELEMENT_DESC inputElements[3] = {};
 
-		// Set up the first element - a position, which is 3 float values
-		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
-		inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
-		inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
+		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;	
+		inputElements[0].SemanticName = "POSITION";							
+		inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	
 
-		// Set up the second element - a color, which is 4 more float values
-		inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
-		inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
-		inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
+		inputElements[1].Format = DXGI_FORMAT_R32G32_FLOAT;			
+		inputElements[1].SemanticName = "TEXCOORD";							
+		inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	
+
+		inputElements[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		inputElements[2].SemanticName = "NORMAL";
+		inputElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 
 		// Create the input layout, verifying our description against actual shader code
 		Graphics::Device->CreateInputLayout(
 			inputElements,							// An array of descriptions
-			2,										// How many elements in that array?
+			3,										// How many elements in that array?
 			vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
 			vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
 			inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
@@ -142,7 +139,7 @@ void Game::LoadPixelShader(Microsoft::WRL::ComPtr<ID3D11PixelShader>& pixelShade
 //    be verified against vertex shader byte code
 // - We'll have that byte code already loaded below
 // --------------------------------------------------------
-void Game::LoadShaders()
+void Game::LoadContent()
 {
 	// load shaders
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
@@ -152,55 +149,20 @@ void Game::LoadShaders()
 	LoadPixelShader(pixelShader, L"PixelShader.cso");
 
 	// create materials
-	std::shared_ptr<Material> redMaterial = std::make_shared<Material>(XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f), vertexShader, pixelShader);
-	std::shared_ptr<Material> greenMaterial = std::make_shared<Material>(XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f), vertexShader, pixelShader);
-	std::shared_ptr<Material> blueMaterial = std::make_shared<Material>(XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f), vertexShader, pixelShader);
+	std::shared_ptr<Material> redMaterial = std::make_shared<Material>(XMFLOAT4(1.0f, 0.25f, 0.25f, 0.0f), vertexShader, pixelShader);
+	std::shared_ptr<Material> greenMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, pixelShader);
+	std::shared_ptr<Material> blueMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, pixelShader);
 
-	// Create Geometry
-	XMFLOAT4 red = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 green = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
-	XMFLOAT4 blue = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 white = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-
-	Vertex triangleVertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), red },
-		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.5f, -0.5f, +0.0f), green },
-	};
-	unsigned int triangleIndices[] = { 0, 1, 2 };
-
-	Vertex squareVertices[] =
-	{
-		{ XMFLOAT3(-0.25f, +0.25f, +0.0f), red },
-		{ XMFLOAT3(+0.25f, +0.25f, +0.0f), blue },
-		{ XMFLOAT3(+0.25f, -0.25f, +0.0f), green },
-		{ XMFLOAT3(-0.25f, -0.25f, +0.0f), white },
-	};
-	unsigned int squareIndices[] = { 0, 1, 3, 1, 2, 3 };
-
-	Vertex weirdShapeVerts[] =
-	{
-		{ XMFLOAT3(0.0f, +1.0f, +0.0f), red },
-		{ XMFLOAT3(+1.0f, 0.0f, +0.0f), white },
-		{ XMFLOAT3(+0.75f, 0.0f, +0.0f), white },
-		{ XMFLOAT3(0.0f, -1.0f, +0.0f), blue },
-		{ XMFLOAT3(-1.0f, 0.0f, +0.0f), black },
-		{ XMFLOAT3(-0.75f, 0.0f, +0.0f), black },
-	};
-	unsigned int weirdShapeInds[] = { 0, 1, 2, 2, 1, 3, 4, 5, 3, 4, 0, 5 };
-
-	// create meshes
-	meshes.push_back(std::make_shared<Mesh>("Triangle", triangleVertices, 3, triangleIndices, 3));
-	meshes.push_back(std::make_shared<Mesh>("Square", squareVertices, 4, squareIndices, 6));
-	meshes.push_back(std::make_shared<Mesh>("Weird thing", weirdShapeVerts, 6, weirdShapeInds, 12));
+	// Create Meshes
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/torus.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/helix.obj").c_str()));
 
 	// create GameEntities
-	entities.push_back(GameEntity(meshes[0], redMaterial));
-	entities.push_back(GameEntity(meshes[0], greenMaterial));
-	entities.push_back(GameEntity(meshes[1], blueMaterial));
-	entities.push_back(GameEntity(meshes[1], redMaterial));
+	entities.push_back(GameEntity(meshes[2], redMaterial));
+	entities.push_back(GameEntity(meshes[2], greenMaterial));
+	entities.push_back(GameEntity(meshes[2], blueMaterial));
+	entities.push_back(GameEntity(meshes[2], redMaterial));
 	entities.push_back(GameEntity(meshes[2], greenMaterial));
 
 	entities[1].GetTransform()->MoveAbsolute(-0.5f, 0.0f, 0.0f);
@@ -222,16 +184,6 @@ void Game::LoadShaders()
 		Graphics::Context->IASetInputLayout(inputLayout.Get());
 	}
 }
-
-
-// --------------------------------------------------------
-// Creates the geometry we're going to draw
-// --------------------------------------------------------
-void Game::CreateGeometry()
-{
-
-}
-
 
 // --------------------------------------------------------
 // Handle resizing to match the new window size
@@ -412,6 +364,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			// copy fresh data to contant buffer
 			ShaderData vsData = {};
 			vsData.colorTint = entities[i].GetMaterial()->GetColorTint();
+			//vsData.colorTint = XMFLOAT4(colorTint);
 			vsData.worldMat = entities[i].GetTransform()->GetWorldMatrix();
 			vsData.viewMat = activeCamera->GetViewMatrix();
 			vsData.projMat = activeCamera->GetProjMatrix();
