@@ -157,13 +157,19 @@ void Game::LoadContent()
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/torus.obj").c_str()));
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/helix.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/cube.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/cylinder.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad.obj").c_str()));
+	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad_double_sided.obj").c_str()));
+
+
 
 	// create GameEntities
-	entities.push_back(GameEntity(meshes[2], redMaterial));
-	entities.push_back(GameEntity(meshes[2], greenMaterial));
-	entities.push_back(GameEntity(meshes[2], blueMaterial));
-	entities.push_back(GameEntity(meshes[2], redMaterial));
-	entities.push_back(GameEntity(meshes[2], greenMaterial));
+	entities.push_back(GameEntity(meshes[0], redMaterial));
+	entities.push_back(GameEntity(meshes[0], greenMaterial));
+	entities.push_back(GameEntity(meshes[0], blueMaterial));
+	entities.push_back(GameEntity(meshes[0], redMaterial));
+	entities.push_back(GameEntity(meshes[0], greenMaterial));
 
 	entities[1].GetTransform()->MoveAbsolute(-0.5f, 0.0f, 0.0f);
 	entities[2].GetTransform()->MoveAbsolute(0.25f, 0.25f, 0.0f);
