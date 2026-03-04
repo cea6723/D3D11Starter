@@ -248,8 +248,8 @@ Mesh::Mesh(const char* objFile)
 	obj.close();
 
 	// NEXT: Create the actual buffers!
-	verticesNum = finalVertices.size();
-	indiciesNum = finalIndices.size();
+	verticesNum = (int)(finalVertices.size());
+	indiciesNum = (int)finalIndices.size();
 	
 	CreateBuffers(&finalVertices[0], verticesNum, &finalIndices[0], indiciesNum);
 

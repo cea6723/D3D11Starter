@@ -31,10 +31,10 @@ Game::Game()
 {
 	LoadContent();
 
-	// Constant Buffer
+	// Constant Buffers
 	{
 		// calculate size
-		unsigned int size = sizeof(ShaderData);
+		unsigned int size = sizeof(VertexShaderData);
 		size = (size + 15) / 16 * 16;
 
 		// describe
@@ -49,6 +49,18 @@ Game::Game()
 
 		// bind
 		Graphics::Context->VSSetConstantBuffers(0, 1, constBuffer.GetAddressOf());
+
+		size = sizeof(PixelShaderData);
+		size = (size + 15) / 16 * 16;
+
+		D3D11_BUFFER_DESC pcbDesc = {};
+		pcbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		pcbDesc.ByteWidth = size;
+		pcbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		pcbDesc.Usage = D3D11_USAGE_DYNAMIC;
+
+		Graphics::Device->CreateBuffer(&pcbDesc, 0, pixelConstBuffer.GetAddressOf());
+		Graphics::Context->PSSetConstantBuffers(0, 1, pixelConstBuffer.GetAddressOf());
 	}
 
 	// Initialize ImGui itself & platform/renderer backends
@@ -61,7 +73,7 @@ Game::Game()
 	//ImGui::StyleColorsLight();
 	//ImGui::StyleColorsClassic();
 
-	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, 0.0f, -10.0f), XM_PIDIV4));
+	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, 11.0f, -18.0f), XM_PIDIV4));
 	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, -5.0f, -5.0f), XM_PIDIV2));
 
 	activeCamera = cameras[0];
@@ -147,11 +159,22 @@ void Game::LoadContent()
 
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 	LoadPixelShader(pixelShader, L"PixelShader.cso");
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> uvPixelShader;
+	LoadPixelShader(uvPixelShader, L"DebugUVsPS.cso");
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> normalPixelShader;
+	LoadPixelShader(normalPixelShader, L"DebugNormalsPS.cso");
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> customPixelShader;
+	LoadPixelShader(customPixelShader, L"CustomPS.cso");
 
 	// create materials
 	std::shared_ptr<Material> redMaterial = std::make_shared<Material>(XMFLOAT4(1.0f, 0.25f, 0.25f, 0.0f), vertexShader, pixelShader);
-	std::shared_ptr<Material> greenMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, pixelShader);
-	std::shared_ptr<Material> blueMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, pixelShader);
+	materials.push_back(redMaterial);
+	std::shared_ptr<Material> uvMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, uvPixelShader);
+	materials.push_back(uvMaterial);
+	std::shared_ptr<Material> normalMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, normalPixelShader);
+	materials.push_back(normalMaterial);
+	std::shared_ptr<Material> customMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, customPixelShader);
+	materials.push_back(customMaterial);
 
 	// Create Meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
@@ -162,17 +185,29 @@ void Game::LoadContent()
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad.obj").c_str()));
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad_double_sided.obj").c_str()));
 
-
-
 	// create GameEntities
-	entities.push_back(GameEntity(meshes[0], redMaterial));
-	entities.push_back(GameEntity(meshes[0], greenMaterial));
-	entities.push_back(GameEntity(meshes[0], blueMaterial));
-	entities.push_back(GameEntity(meshes[0], redMaterial));
-	entities.push_back(GameEntity(meshes[0], greenMaterial));
+	for (int i = 0; i < 4; i++)
+	{
+		entities.push_back(GameEntity(meshes[0], materials[i]));
+		entities.push_back(GameEntity(meshes[1], materials[i]));
+		entities.push_back(GameEntity(meshes[2], materials[i]));
+		entities.push_back(GameEntity(meshes[3], materials[i]));
+		entities.push_back(GameEntity(meshes[4], materials[i]));
+		entities.push_back(GameEntity(meshes[5], materials[i]));
+		entities.push_back(GameEntity(meshes[6], materials[i]));
 
-	entities[1].GetTransform()->MoveAbsolute(-0.5f, 0.0f, 0.0f);
-	entities[2].GetTransform()->MoveAbsolute(0.25f, 0.25f, 0.0f);
+		entities[0 + (7 * i)].GetTransform()->MoveAbsolute(-7.5f, (float)(3 * i), 0.0f);
+		entities[1 + (7 * i)].GetTransform()->MoveAbsolute(-5.0f, (float)(3 * i), 0.0f);
+		entities[2 + (7 * i)].GetTransform()->MoveAbsolute(-2.5f, (float)(3 * i), 0.0f);
+		entities[3 + (7 * i)].GetTransform()->MoveAbsolute(0.0f, (float)(3 * i), 0.0f);
+		entities[4 + (7 * i)].GetTransform()->MoveAbsolute(2.5f, (float)(3 * i), 0.0f);
+		entities[5 + (7 * i)].GetTransform()->MoveAbsolute(5.0f, (float)(3 * i), 0.0f);
+		entities[6 + (7 * i)].GetTransform()->MoveAbsolute(7.5f, (float)(3 * i), 0.0f);
+	}
+	
+
+
+
 
 	// Set initial graphics API state
 	//  - These settings persist until we change them
@@ -331,15 +366,11 @@ void Game::Update(float deltaTime, float totalTime)
 	activeCamera->Update(deltaTime);
 
 	// move entities
-	float scale = (float)sin(totalTime) * 0.5f + 0.8f;
-	entities[0].GetTransform()->SetPosition((float)sin(totalTime), 0, 0);
-	entities[1].GetTransform()->SetScale(scale, scale, scale);
-	entities[2].GetTransform()->Rotate(0, 0, deltaTime * 1.0f);
-	entities[3].GetTransform()->SetPosition(0.25f, (float)sin(totalTime), 0);
+	for (int i = 0; i < entities.size(); i++)
+	{
+		entities[i].GetTransform()->Rotate(0, deltaTime * 1.0f, 0.0f);	
+	}
 
-	entities[4].GetTransform()->SetPosition((float)sin(totalTime), (float)sin(totalTime), 0);
-	entities[4].GetTransform()->SetScale(scale, scale, scale);
-	entities[4].GetTransform()->Rotate(0, 0, deltaTime * 1.0f);
 
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::KeyDown(VK_ESCAPE))
@@ -367,10 +398,8 @@ void Game::Draw(float deltaTime, float totalTime)
 	{
 		for (int i = 0; i < entities.size(); i++)
 		{
-			// copy fresh data to contant buffer
-			ShaderData vsData = {};
-			vsData.colorTint = entities[i].GetMaterial()->GetColorTint();
-			//vsData.colorTint = XMFLOAT4(colorTint);
+			// Vertex Shader Constant Buffer
+			VertexShaderData vsData = {};
 			vsData.worldMat = entities[i].GetTransform()->GetWorldMatrix();
 			vsData.viewMat = activeCamera->GetViewMatrix();
 			vsData.projMat = activeCamera->GetProjMatrix();
@@ -381,6 +410,17 @@ void Game::Draw(float deltaTime, float totalTime)
 			memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
 
 			Graphics::Context->Unmap(constBuffer.Get(), 0);
+
+			// Pixel Shader Constant Buffer
+			PixelShaderData psData = {};
+			psData.colorTint = entities[i].GetMaterial()->GetColorTint();
+			psData.time = totalTime;
+
+			D3D11_MAPPED_SUBRESOURCE mappedBuffer2 = {};
+			Graphics::Context->Map(pixelConstBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer2);
+			memcpy(mappedBuffer2.pData, &psData, sizeof(psData));
+			Graphics::Context->Unmap(pixelConstBuffer.Get(), 0);
+
 
 			// DRAW
 			entities[i].Draw();

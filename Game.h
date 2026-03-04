@@ -42,12 +42,14 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> constBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pixelConstBuffer;
 
 	// Shaders and shader-related constructs
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<GameEntity> entities;
+	std::vector<std::shared_ptr<Material>> materials;
 
 	// Fields
 	std::vector<std::shared_ptr<Camera>> cameras;
