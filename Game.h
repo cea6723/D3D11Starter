@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <DirectXMath.h>
+#include <d3d11shadertracing.h>
 
 #include "Mesh.h"
 #include "GameEntity.h"
@@ -27,6 +28,7 @@ public:
 private:
 
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
+	void FillAndBindNextConstantBuffer(void* data, unsigned int dataSizeInBytes, D3D11_SHADER_TYPE shaderType, unsigned int registerSlot);
 	void LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexShader, const std::wstring& filePath);
 	void LoadPixelShader(Microsoft::WRL::ComPtr<ID3D11PixelShader>& pixelShader, const std::wstring& filePath);
 	void LoadContent();
@@ -43,6 +45,12 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> constBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> pixelConstBuffer;
+
+	// Ring Constant Buffer
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext1> context1;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> constantBufferHeap;
+	unsigned int cbHeapSizeInBytes;
+	unsigned int cbHeapOffsetInBytes;
 
 	// Shaders and shader-related constructs
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;

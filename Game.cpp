@@ -31,36 +31,23 @@ Game::Game()
 {
 	LoadContent();
 
-	// Constant Buffers
+	// Ring Constant Buffer
 	{
-		// calculate size
-		unsigned int size = sizeof(VertexShaderData);
-		size = (size + 15) / 16 * 16;
+		// get Direct3D 11.1 version of the context
+		Graphics::Context->QueryInterface<ID3D11DeviceContext1>(context1.GetAddressOf());
 
-		// describe
+		cbHeapOffsetInBytes = 0;
+
+		cbHeapSizeInBytes = 1000 * 256;
+		cbHeapSizeInBytes = (cbHeapSizeInBytes + 255) / 256 * 256;
+
 		D3D11_BUFFER_DESC cbDesc = {};
 		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.ByteWidth = size;
+		cbDesc.ByteWidth = cbHeapSizeInBytes;
 		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
 
-		// create
-		Graphics::Device->CreateBuffer(&cbDesc, 0, constBuffer.GetAddressOf());
-
-		// bind
-		Graphics::Context->VSSetConstantBuffers(0, 1, constBuffer.GetAddressOf());
-
-		size = sizeof(PixelShaderData);
-		size = (size + 15) / 16 * 16;
-
-		D3D11_BUFFER_DESC pcbDesc = {};
-		pcbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		pcbDesc.ByteWidth = size;
-		pcbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		pcbDesc.Usage = D3D11_USAGE_DYNAMIC;
-
-		Graphics::Device->CreateBuffer(&pcbDesc, 0, pixelConstBuffer.GetAddressOf());
-		Graphics::Context->PSSetConstantBuffers(0, 1, pixelConstBuffer.GetAddressOf());
+		Graphics::Device->CreateBuffer(&cbDesc, 0, constantBufferHeap.GetAddressOf());
 	}
 
 	// Initialize ImGui itself & platform/renderer backends
@@ -93,6 +80,57 @@ Game::~Game()
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+}
+
+void Game::FillAndBindNextConstantBuffer(void* data, unsigned int dataSizeInBytes, D3D11_SHADER_TYPE shaderType, unsigned int registerSlot)
+{
+	// get next multiple of 256
+	unsigned int reservationSize = (dataSizeInBytes + 255) / 256 * 256;
+
+	// determine if enough space for new reservation, if not loop back to beginning
+	if (cbHeapOffsetInBytes + reservationSize >= cbHeapSizeInBytes) cbHeapOffsetInBytes = 0;
+
+	// map, memcpy, unmap
+	D3D11_MAPPED_SUBRESOURCE map{};
+	Graphics::Context->Map(
+		constantBufferHeap.Get(),
+		0,
+		D3D11_MAP_WRITE_NO_OVERWRITE,
+		0,
+		&map);
+	void* uploadAddress = reinterpret_cast<void*>((UINT64)map.pData + cbHeapOffsetInBytes);
+	memcpy(uploadAddress, data, dataSizeInBytes);
+	Graphics::Context->Unmap(constantBufferHeap.Get(), 0);
+
+	// calculate binding offset and size in shader constants (16-byte constants)
+	unsigned int firstConstant = cbHeapOffsetInBytes / 16;
+	unsigned int numConstants = reservationSize / 16;
+
+	// bind the buffer to proper pipeline stage
+	switch (shaderType)
+	{
+	case D3D11_VERTEX_SHADER:
+		context1->VSSetConstantBuffers1(
+			registerSlot,
+			1,
+			constantBufferHeap.GetAddressOf(),
+			&firstConstant,
+			&numConstants
+		);
+		break;
+	case D3D11_PIXEL_SHADER:
+		context1->PSSetConstantBuffers1(
+			registerSlot,
+			1,
+			constantBufferHeap.GetAddressOf(),
+			&firstConstant,
+			&numConstants
+		);
+		break;
+	}
+
+	// offset for the next call
+	cbHeapOffsetInBytes += reservationSize;
 }
 
 void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexShader, const std::wstring& filePath)
@@ -404,23 +442,22 @@ void Game::Draw(float deltaTime, float totalTime)
 			vsData.viewMat = activeCamera->GetViewMatrix();
 			vsData.projMat = activeCamera->GetProjMatrix();
 
-			D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-			Graphics::Context->Map(constBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-
-			memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-
-			Graphics::Context->Unmap(constBuffer.Get(), 0);
+			FillAndBindNextConstantBuffer(
+				&vsData,
+				sizeof(VertexShaderData),
+				D3D11_VERTEX_SHADER,
+				0);
 
 			// Pixel Shader Constant Buffer
 			PixelShaderData psData = {};
 			psData.colorTint = entities[i].GetMaterial()->GetColorTint();
 			psData.time = totalTime;
 
-			D3D11_MAPPED_SUBRESOURCE mappedBuffer2 = {};
-			Graphics::Context->Map(pixelConstBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer2);
-			memcpy(mappedBuffer2.pData, &psData, sizeof(psData));
-			Graphics::Context->Unmap(pixelConstBuffer.Get(), 0);
-
+			FillAndBindNextConstantBuffer(
+				&psData,
+				sizeof(PixelShaderData),
+				D3D11_PIXEL_SHADER,
+				0);
 
 			// DRAW
 			entities[i].Draw();
