@@ -7,6 +7,7 @@
 #include "Mesh.h"
 #include "BufferStructs.h"
 #include "Material.h"
+#include "WICTextureLoader.h"
 
 #include <DirectXMath.h>
 
@@ -191,6 +192,17 @@ void Game::LoadPixelShader(Microsoft::WRL::ComPtr<ID3D11PixelShader>& pixelShade
 // --------------------------------------------------------
 void Game::LoadContent()
 {
+	// create sampler
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler;
+	D3D11_SAMPLER_DESC sampDesc = {};
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	sampDesc.MaxAnisotropy = 16;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	Graphics::Device->CreateSamplerState(&sampDesc, sampler.GetAddressOf());
+
 	// load shaders
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
 	LoadVertexShader(vertexShader, L"VertexShader.cso");
@@ -203,16 +215,46 @@ void Game::LoadContent()
 	LoadPixelShader(normalPixelShader, L"DebugNormalsPS.cso");
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> customPixelShader;
 	LoadPixelShader(customPixelShader, L"CustomPS.cso");
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> comboPixelShader;
+	LoadPixelShader(comboPixelShader, L"ComboPS.cso");
+
+	// load textures
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_wall_15_diff_4k.png").c_str(), 0, rockSRV.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bark_brown_02_diff_4k.png").c_str(), 0, woodSRV.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> concreteSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/gravel_concrete_03_diff_4k.png").c_str(), 0, concreteSRV.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> potholeSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/pothole.png").c_str(), 0, potholeSRV.GetAddressOf());
 
 	// create materials
-	std::shared_ptr<Material> redMaterial = std::make_shared<Material>(XMFLOAT4(1.0f, 0.25f, 0.25f, 0.0f), vertexShader, pixelShader);
-	materials.push_back(redMaterial);
-	std::shared_ptr<Material> uvMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, uvPixelShader);
+	std::shared_ptr<Material> rockMaterial = std::make_shared<Material>("Rock", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
+	materials.push_back(rockMaterial);
+	std::shared_ptr<Material> woodMaterial = std::make_shared<Material>("Wood", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
+	materials.push_back(woodMaterial);
+	std::shared_ptr<Material> crackedConcreteMaterial = std::make_shared<Material>("Cracked Concrete", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, comboPixelShader);
+	materials.push_back(crackedConcreteMaterial);
+	std::shared_ptr<Material> uvMaterial = std::make_shared<Material>("UVs", XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, uvPixelShader);
 	materials.push_back(uvMaterial);
-	std::shared_ptr<Material> normalMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, normalPixelShader);
+	std::shared_ptr<Material> normalMaterial = std::make_shared<Material>("Normals", XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, normalPixelShader);
 	materials.push_back(normalMaterial);
-	std::shared_ptr<Material> customMaterial = std::make_shared<Material>(XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, customPixelShader);
+	std::shared_ptr<Material> customMaterial = std::make_shared<Material>("Timey Wimey", XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, customPixelShader);
 	materials.push_back(customMaterial);
+
+	// add textures and samplers to materials
+	rockMaterial->AddTextureSRV(0, rockSRV);
+	rockMaterial->AddSampler(0, sampler);
+
+	woodMaterial->AddTextureSRV(0, woodSRV);
+	woodMaterial->AddSampler(0, sampler);
+
+	crackedConcreteMaterial->AddTextureSRV(0, concreteSRV);
+	crackedConcreteMaterial->AddTextureSRV(1, potholeSRV);
+	crackedConcreteMaterial->AddSampler(0, sampler);
 
 	// Create Meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
@@ -346,6 +388,37 @@ void Game::BuildUI()
 			}
 			ImGui::TreePop();
 		}
+		if (ImGui::TreeNode("Materials"))
+		{
+			for (int i = 0; i < materials.size(); i++)
+			{
+				ImGui::PushID(i);
+				if (ImGui::TreeNode(materials[i]->GetName()))
+				{
+					XMFLOAT4 colorTint = materials[i]->GetColorTint();
+					XMFLOAT2 uvScale = materials[i]->GetUVScale();
+					XMFLOAT2 uvOffset = materials[i]->GetUVOffset();
+
+					ImGui::ColorEdit4("Color Tint", (float*)&colorTint);
+					materials[i]->SetColorTint(colorTint);
+
+					ImGui::DragFloat2("UV Scale", (float*)&uvScale, 0.01f);
+					materials[i]->SetUVScale(uvScale);
+
+					ImGui::DragFloat2("UV Offset", (float*)&uvOffset, 0.01f);
+					materials[i]->SetUVOffset(uvOffset);
+
+					ImGui::Text("Textures");
+					for (int j = 0; j < materials[i]->GetMaxSRVIndex() + 1; j++) {
+						ImGui::Image((void*)materials[i]->GetSRV(j).Get(), ImVec2(128.0f, 128.0f));
+						if (j != materials[i]->GetMaxSRVIndex()) ImGui::SameLine();
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
+			ImGui::TreePop();
+		}
 		if (ImGui::TreeNode("Game Entities"))
 		{
 			for (int i = 0; i < entities.size(); i++)
@@ -364,6 +437,7 @@ void Game::BuildUI()
 					ImGui::DragFloat3("Position", &position.x);
 					ImGui::DragFloat3("Rotation (Radians)", &rotation.x);
 					ImGui::DragFloat3("Scale", &scale.x);
+
 					ImGui::TreePop();
 				}
 				ImGui::PopID();
@@ -451,6 +525,8 @@ void Game::Draw(float deltaTime, float totalTime)
 			// Pixel Shader Constant Buffer
 			PixelShaderData psData = {};
 			psData.colorTint = entities[i].GetMaterial()->GetColorTint();
+			psData.uvScale = entities[i].GetMaterial()->GetUVScale();
+			psData.uvOffset = entities[i].GetMaterial()->GetUVOffset();
 			psData.time = totalTime;
 
 			FillAndBindNextConstantBuffer(
@@ -458,6 +534,8 @@ void Game::Draw(float deltaTime, float totalTime)
 				sizeof(PixelShaderData),
 				D3D11_PIXEL_SHADER,
 				0);
+
+			entities[i].GetMaterial()->BindTexturesAndSamplers();
 
 			// DRAW
 			entities[i].Draw();

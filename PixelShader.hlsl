@@ -1,7 +1,12 @@
 
+Texture2D SurfaceTexture : register(t0);
+SamplerState BasicSampler : register(s0);
+
 cbuffer ExternalData : register(b0)
 {
     float4 colorTint;
+    float2 uvScale;
+    float2 uvOffset;
 }
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -27,5 +32,8 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-    return colorTint;
+    input.uv = input.uv * uvScale + uvOffset;
+    float4 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv);
+    
+    return surfaceColor * colorTint;
 }

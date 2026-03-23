@@ -11,5 +11,7 @@ struct VertexShaderData
 struct PixelShaderData
 {
 	DirectX::XMFLOAT4 colorTint;
+	DirectX::XMFLOAT2 uvScale;
+	DirectX::XMFLOAT2 uvOffset;
 	float time;
 };
