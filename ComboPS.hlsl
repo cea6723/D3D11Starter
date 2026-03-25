@@ -38,5 +38,5 @@ float4 main(VertexToPixel input) : SV_TARGET
     float4 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv);
     float4 decalColor = DecalTexture.Sample(BasicSampler, input.uv);
     
-    return (surfaceColor - decalColor) * colorTint;
+    return surfaceColor * decalColor.rrrr * colorTint;
 }

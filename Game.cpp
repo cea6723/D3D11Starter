@@ -228,16 +228,16 @@ void Game::LoadContent()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> concreteSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/gravel_concrete_03_diff_4k.png").c_str(), 0, concreteSRV.GetAddressOf());
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> potholeSRV;
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/pothole.png").c_str(), 0, potholeSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> personSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/person.png").c_str(), 0, personSRV.GetAddressOf());
 
 	// create materials
 	std::shared_ptr<Material> rockMaterial = std::make_shared<Material>("Rock", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
 	materials.push_back(rockMaterial);
 	std::shared_ptr<Material> woodMaterial = std::make_shared<Material>("Wood", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
 	materials.push_back(woodMaterial);
-	std::shared_ptr<Material> crackedConcreteMaterial = std::make_shared<Material>("Cracked Concrete", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, comboPixelShader);
-	materials.push_back(crackedConcreteMaterial);
+	std::shared_ptr<Material> concreteDecalMaterial = std::make_shared<Material>("Concrete person decal", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, comboPixelShader);
+	materials.push_back(concreteDecalMaterial);
 	std::shared_ptr<Material> uvMaterial = std::make_shared<Material>("UVs", XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, uvPixelShader);
 	materials.push_back(uvMaterial);
 	std::shared_ptr<Material> normalMaterial = std::make_shared<Material>("Normals", XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, normalPixelShader);
@@ -252,9 +252,9 @@ void Game::LoadContent()
 	woodMaterial->AddTextureSRV(0, woodSRV);
 	woodMaterial->AddSampler(0, sampler);
 
-	crackedConcreteMaterial->AddTextureSRV(0, concreteSRV);
-	crackedConcreteMaterial->AddTextureSRV(1, potholeSRV);
-	crackedConcreteMaterial->AddSampler(0, sampler);
+	concreteDecalMaterial->AddTextureSRV(0, concreteSRV);
+	concreteDecalMaterial->AddTextureSRV(1, personSRV);
+	concreteDecalMaterial->AddSampler(0, sampler);
 
 	// Create Meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
