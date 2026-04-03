@@ -32,6 +32,47 @@ Game::Game()
 {
 	LoadContent();
 
+	// Initialize Lights
+	Light directionalLight1 = {};
+	directionalLight1.type = 0;
+	directionalLight1.direction = XMFLOAT3(-1.0f, 0.0f, 0.0f);
+	directionalLight1.color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	directionalLight1.intensity = 1.0f;
+	lights.push_back(directionalLight1);
+
+	Light directionalLight2 = {};
+	directionalLight2.type = 0;
+	directionalLight2.direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+	directionalLight2.color = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	directionalLight2.intensity = 1.0f;
+	lights.push_back(directionalLight2);
+
+	Light directionalLight3 = {};
+	directionalLight3.type = 0;
+	directionalLight3.direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	directionalLight3.color = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	directionalLight3.intensity = 1.0f;
+	lights.push_back(directionalLight3);
+
+	Light pointLight1 = {};
+	pointLight1.type = 1;
+	pointLight1.position = XMFLOAT3(1.0f, 0.0f, -1.0f);
+	pointLight1.color = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	pointLight1.intensity = 1.0f;
+	pointLight1.range = 10.0f;
+	lights.push_back(pointLight1);
+
+	Light spotLight1 = {};
+	spotLight1.type = 2;
+	spotLight1.position = XMFLOAT3(5.0f, 1.0f, 0.0f);
+	spotLight1.direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+	spotLight1.color = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	spotLight1.intensity = 1.0f;
+	spotLight1.range = 5.0f;
+	spotLight1.spotOuterAngle = XM_PIDIV4;
+	spotLight1.spotInnerAngle = XM_PIDIV4 * 0.9f;
+	lights.push_back(spotLight1);
+
 	// Ring Constant Buffer
 	{
 		// get Direct3D 11.1 version of the context
@@ -61,7 +102,7 @@ Game::Game()
 	//ImGui::StyleColorsLight();
 	//ImGui::StyleColorsClassic();
 
-	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, 11.0f, -18.0f), XM_PIDIV4));
+	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, 3.0f, -18.0f), XM_PIDIV4));
 	cameras.push_back(std::make_shared<Camera>(Window::AspectRatio(), XMFLOAT3(0.0f, -5.0f, -5.0f), XM_PIDIV2));
 
 	activeCamera = cameras[0];
@@ -266,7 +307,7 @@ void Game::LoadContent()
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad_double_sided.obj").c_str()));
 
 	// create GameEntities
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		entities.push_back(GameEntity(meshes[0], materials[i]));
 		entities.push_back(GameEntity(meshes[1], materials[i]));
@@ -367,6 +408,27 @@ void Game::BuildUI()
 			float fov = activeCamera->GetFOV();
 			ImGui::DragFloat3("Position", &position.x);
 			ImGui::DragFloat("FOV", &fov);
+
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Lighting"))
+		{
+			ImGui::ColorEdit4("Ambient Color", (float*)&ambientColor);
+
+			for (int i = 0; i < lights.size(); i++)
+			{
+				ImGui::PushID(i);
+				char name[20];
+				sprintf_s(name, "Light %i", i);
+				if (ImGui::TreeNode(name))
+				{
+					lights[i].color;
+					ImGui::ColorEdit4("Color", (float*)&lights[i].color);
+					ImGui::DragFloat("Intensity", &lights[i].intensity, 0.01f, 0.0f, 1.0f);
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
 
 			ImGui::TreePop();
 		}
@@ -513,6 +575,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			// Vertex Shader Constant Buffer
 			VertexShaderData vsData = {};
 			vsData.worldMat = entities[i].GetTransform()->GetWorldMatrix();
+			vsData.worldInvTransMat = entities[i].GetTransform()->GetWorldInverseTransposeMatrix();
 			vsData.viewMat = activeCamera->GetViewMatrix();
 			vsData.projMat = activeCamera->GetProjMatrix();
 
@@ -525,9 +588,12 @@ void Game::Draw(float deltaTime, float totalTime)
 			// Pixel Shader Constant Buffer
 			PixelShaderData psData = {};
 			psData.colorTint = entities[i].GetMaterial()->GetColorTint();
+			psData.ambientColor = (XMFLOAT3)ambientColor;
 			psData.uvScale = entities[i].GetMaterial()->GetUVScale();
 			psData.uvOffset = entities[i].GetMaterial()->GetUVOffset();
+			psData.cameraPos = activeCamera->GetPosition();
 			psData.time = totalTime;
+			memcpy(&psData.lights, &lights[0], sizeof(Light) * (int)lights.size());
 
 			FillAndBindNextConstantBuffer(
 				&psData,
