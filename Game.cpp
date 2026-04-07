@@ -187,7 +187,7 @@ void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexSh
 
 	// Input Layout
 	{
-		D3D11_INPUT_ELEMENT_DESC inputElements[3] = {};
+		D3D11_INPUT_ELEMENT_DESC inputElements[4] = {};
 
 		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;	
 		inputElements[0].SemanticName = "POSITION";							
@@ -201,10 +201,14 @@ void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexSh
 		inputElements[2].SemanticName = "NORMAL";
 		inputElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 
+		inputElements[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		inputElements[3].SemanticName = "TANGENT";
+		inputElements[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
 		// Create the input layout, verifying our description against actual shader code
 		Graphics::Device->CreateInputLayout(
 			inputElements,							// An array of descriptions
-			3,										// How many elements in that array?
+			4,										// How many elements in that array?
 			vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
 			vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
 			inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
@@ -263,6 +267,9 @@ void Game::LoadContent()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_wall_15_diff_4k.png").c_str(), 0, rockSRV.GetAddressOf());
 
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockNormalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_wall_15_nor_dx_4k.png").c_str(), 0, rockNormalSRV.GetAddressOf());
+
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bark_brown_02_diff_4k.png").c_str(), 0, woodSRV.GetAddressOf());
 
@@ -288,6 +295,7 @@ void Game::LoadContent()
 
 	// add textures and samplers to materials
 	rockMaterial->AddTextureSRV(0, rockSRV);
+	rockMaterial->AddTextureSRV(1, rockNormalSRV);
 	rockMaterial->AddSampler(0, sampler);
 
 	woodMaterial->AddTextureSRV(0, woodSRV);

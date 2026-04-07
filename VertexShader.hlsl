@@ -34,6 +34,7 @@ VertexToPixel main( VertexShaderInput input )
     output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
     output.uv = input.uv;
     output.normal = mul((float3x3)worldInvTransMat, input.normal);
+    output.tangent = mul((float3x3) worldMat, input.tangent);
     output.wordPos = mul(worldMat, float4(input.localPosition, 1)).xyz;
 
 	// Whatever we return will make its way through the pipeline to the

@@ -38,5 +38,6 @@ private:
 	const char* name;
 
 	void CreateBuffers(Vertex* vertices, int _verticesNum, unsigned int* indices, int _indiciesNum);
+	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 };
 

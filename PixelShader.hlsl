@@ -2,6 +2,8 @@
 #include "ShaderIncludes.hlsli"
 
 Texture2D SurfaceTexture : register(t0);
+Texture2D NormalMap : register(t1);
+
 SamplerState BasicSampler : register(s0);
 
 cbuffer ExternalData : register(b0)
@@ -27,13 +29,25 @@ cbuffer ExternalData : register(b0)
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-    input.normal = normalize(input.normal);
+    // unpack normal from texture
+    float3 unpackedNormal = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb * 2.0f - 1.0f);
+    
+    // create TBN matrix
+    float3 N = normalize(input.normal);
+    float3 T = normalize(input.tangent - dot(input.tangent, N) * N);
+    float3 B = cross(N, T);
+    float3x3 TBN = float3x3(T, B, N);
+    
+    // transform normal from texture
+    float3 finalNormal = mul(unpackedNormal, TBN);
+    
+    input.normal = finalNormal;
     input.uv = input.uv * uvScale + uvOffset;
     
     float4 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv);
     float3 ambientTerm = ambientColor.rgbr * surfaceColor * colorTint;
     
-    float3 totalLight;
+    float3 totalLight = 0;
     
     for (int i = 0; i < 5; i++)
     {
@@ -57,5 +71,6 @@ float4 main(VertexToPixel input) : SV_TARGET
     totalLight *= surfaceColor.rgb;
     totalLight += ambientTerm;
     
+    //return float4(input.tangent, 1);
     return float4(totalLight, 1);
 }

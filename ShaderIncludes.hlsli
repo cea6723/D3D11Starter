@@ -11,6 +11,7 @@ struct VertexShaderInput
     float3 localPosition : POSITION;
     float2 uv : TEXCOORD;
     float3 normal : NORMAL;
+    float3 tangent : TANGENT;
 };
 
 struct VertexToPixel
@@ -19,6 +20,7 @@ struct VertexToPixel
     float2 uv : TEXCOORD;
     float3 normal : NORMAL;
     float3 wordPos : POSITION;
+    float3 tangent : TANGENT;
 };
 
 struct Light
@@ -61,6 +63,8 @@ float3 DirectionLightCalc(Light light, float3 cameraPos, VertexToPixel input)
     float3 diffuseTerm = DiffuseCalc(light, lightDir, input.normal);
     float3 specularTerm = SpecularCalc(light, lightDir, input.normal, dirToCamera);
     
+    specularTerm *= any(diffuseTerm);
+    
     return diffuseTerm + specularTerm;
 }
 
@@ -71,6 +75,8 @@ float3 PointLightCalc(Light light, float3 cameraPos, VertexToPixel input)
     
     float3 diffuseTerm = DiffuseCalc(light, lightDir, input.normal);
     float3 specularTerm = SpecularCalc(light, lightDir, input.normal, dirToCamera);
+    
+    specularTerm *= any(diffuseTerm);
     
     return (diffuseTerm + specularTerm) * Attenuate(light, input.wordPos);
 }
