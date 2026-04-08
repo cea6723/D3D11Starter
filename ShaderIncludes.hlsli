@@ -23,6 +23,12 @@ struct VertexToPixel
     float3 tangent : TANGENT;
 };
 
+struct SkyVertexToPixel
+{
+    float4 position : SV_POSITION;
+    float3 sampleDir : DIRECTION;
+};
+
 struct Light
 {
     int type;

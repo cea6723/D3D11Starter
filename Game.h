@@ -11,6 +11,7 @@
 #include "GameEntity.h"
 #include "Camera.h"
 #include "Lights.h"
+#include "Sky.h"
 
 class Game
 {
@@ -62,6 +63,9 @@ private:
 
 	// Lights
 	std::vector<Light> lights;
+
+	// Sky
+	std::shared_ptr<Sky> sky;
 
 	// ImGUI fields
 	std::vector<std::shared_ptr<Camera>> cameras;

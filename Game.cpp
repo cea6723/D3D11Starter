@@ -251,6 +251,8 @@ void Game::LoadContent()
 	// load shaders
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
 	LoadVertexShader(vertexShader, L"VertexShader.cso");
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> skyVertexShader;
+	LoadVertexShader(skyVertexShader, L"SkyVertexShader.cso");
 
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 	LoadPixelShader(pixelShader, L"PixelShader.cso");
@@ -262,6 +264,9 @@ void Game::LoadContent()
 	LoadPixelShader(customPixelShader, L"CustomPS.cso");
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> comboPixelShader;
 	LoadPixelShader(comboPixelShader, L"ComboPS.cso");
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> skyPixelShader;
+	LoadPixelShader(skyPixelShader, L"SkyPixelShader.cso");
+
 
 	// load textures
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
@@ -334,9 +339,15 @@ void Game::LoadContent()
 		entities[6 + (7 * i)].GetTransform()->MoveAbsolute(7.5f, (float)(3 * i), 0.0f);
 	}
 	
-
-
-
+	// create sky
+	// meshes[3] is cube
+	sky = std::make_shared<Sky>(meshes[3], sampler, skyPixelShader, skyVertexShader, 
+		FixPath(L"../../Assets/Textures/right.png").c_str(),
+		FixPath(L"../../Assets/Textures/left.png").c_str(),
+		FixPath(L"../../Assets/Textures/up.png").c_str(),
+		FixPath(L"../../Assets/Textures/down.png").c_str(),
+		FixPath(L"../../Assets/Textures/front.png").c_str(),
+		FixPath(L"../../Assets/Textures/back.png").c_str());
 
 	// Set initial graphics API state
 	//  - These settings persist until we change them
@@ -614,6 +625,18 @@ void Game::Draw(float deltaTime, float totalTime)
 			// DRAW
 			entities[i].Draw();
 		}
+
+		// Sky constant buffer
+		SkyVertexShaderData svsData;
+		svsData.projMat = activeCamera->GetProjMatrix();
+		svsData.viewMat = activeCamera->GetViewMatrix();
+		FillAndBindNextConstantBuffer(
+			&svsData,
+			sizeof(SkyVertexShaderData),
+			D3D11_VERTEX_SHADER,
+			0);
+
+		sky->Draw();
 	}
 
 	ImGui::Render(); // Turns this frame’s UI into renderable triangles

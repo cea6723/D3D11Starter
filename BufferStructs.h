@@ -10,6 +10,12 @@ struct VertexShaderData
 	DirectX::XMFLOAT4X4 projMat;
 };
 
+struct SkyVertexShaderData
+{
+	DirectX::XMFLOAT4X4 viewMat;
+	DirectX::XMFLOAT4X4 projMat;
+};
+
 struct PixelShaderData
 {
 	DirectX::XMFLOAT4 colorTint;
