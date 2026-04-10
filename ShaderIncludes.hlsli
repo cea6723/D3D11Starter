@@ -5,6 +5,10 @@
 #define LIGHT_TYPE_POINT       1
 #define LIGHT_TYPE_SPOT        2
 
+#define MIN_ROUGHNESS 0.0000001f
+#define F0_NON_METAL 0.04f
+#define PI 3.14159265359f
+
 // code goes here
 struct VertexShaderInput
 {
@@ -42,16 +46,54 @@ struct Light
     float2 padding;
 };
 
-float3 DiffuseCalc(Light light, float3 lightDir, float3 normal)
+float D_GGX(float3 n, float3 h, float roughness)
 {
-    return saturate(dot(normal, -lightDir)) * light.color * light.intensity;
+    float NdotH = saturate(dot(n, h));
+    float NdotH2 = NdotH * NdotH;
+    float a = roughness * roughness;
+    float a2 = max(a * a, MIN_ROUGHNESS);
+    
+    float denomToSqaure = NdotH2 * (a2 - 1) + 1;
+    return a2 / (PI * denomToSqaure * denomToSqaure);
 }
 
-float3 SpecularCalc(Light light, float3 lightDir, float3 normal, float3 dirToCamera)
+float G_SchlickGGX(float3 n, float3 v, float roughness)
 {
-    float3 refl = reflect(lightDir, normal);
-    float3 RdotV = saturate(dot(refl, dirToCamera));
-    return pow(RdotV, 200) * light.color * light.intensity;
+    float k = pow(roughness + 1, 2) / 8.0f;
+    float NdotV = saturate(dot(n, v));
+    return 1 / (NdotV * (1 - k) + k);
+}
+
+float3 F_Schlick(float3 v, float3 h, float3 f0)
+{
+    float VdotH = saturate(dot(v, h));
+    return f0 + (1 - f0) * pow(1 - VdotH, 5);
+}
+
+float3 DiffuseEnergyConserve(float3 diffuse, float3 F, float metalness)
+{
+    return diffuse * (1 - F) * (1 - metalness);
+}
+
+// n: the normal (after normal mapping)
+// l: the lightvector (normalized direction to thelight)
+// v: the viewvector (normalized direction to thecamera)
+// roughness: from the roughness map
+// f0: specular colorfor this pixel
+float3 MicrofacetBRDF(float3 n, float3 l, float3 v, float roughness, float3 f0, out float3 outF)
+{
+    float3 h = normalize(v + l);
+    
+    float D = D_GGX(n, h, roughness);
+    outF = F_Schlick(v, h, f0);
+    float G = G_SchlickGGX(n, v, roughness) * G_SchlickGGX(n, l, roughness);
+    
+    return (D * outF * G) / 4;
+}
+
+float3 DiffuseCalc(float3 lightDir, float3 normal)
+{
+    return saturate(dot(normal, lightDir));
 }
 
 float Attenuate(Light light, float3 worldPos)
@@ -61,33 +103,35 @@ float Attenuate(Light light, float3 worldPos)
     return att * att;
 }
 
-float3 DirectionLightCalc(Light light, float3 cameraPos, VertexToPixel input)
+float3 DirectionLightCalc(Light light, float3 cameraPos, float3 surfaceColor, float roughness, float metalness, float3 f0, VertexToPixel input)
 {
-    float3 lightDir = normalize(light.direction);
+    float3 toLight = normalize(-light.direction);
     float3 dirToCamera = normalize(cameraPos - input.wordPos);
     
-    float3 diffuseTerm = DiffuseCalc(light, lightDir, input.normal);
-    float3 specularTerm = SpecularCalc(light, lightDir, input.normal, dirToCamera);
+    float3 F;
+    float3 diffuseTerm = DiffuseCalc(toLight, input.normal);
+    float3 specularTerm = MicrofacetBRDF(input.normal, toLight, dirToCamera, roughness, f0, F);
     
-    specularTerm *= any(diffuseTerm);
+    diffuseTerm = DiffuseEnergyConserve(diffuseTerm, F, metalness);
     
-    return diffuseTerm + specularTerm;
+    return (diffuseTerm * surfaceColor + specularTerm) * light.intensity * light.color;
 }
 
-float3 PointLightCalc(Light light, float3 cameraPos, VertexToPixel input)
+float3 PointLightCalc(Light light, float3 cameraPos, float3 surfaceColor, float roughness, float metalness, float3 f0, VertexToPixel input)
 {
-    float3 lightDir = normalize(input.wordPos - light.position);
+    float3 toLight = normalize(light.position - input.wordPos);
     float3 dirToCamera = normalize(cameraPos - input.wordPos);
     
-    float3 diffuseTerm = DiffuseCalc(light, lightDir, input.normal);
-    float3 specularTerm = SpecularCalc(light, lightDir, input.normal, dirToCamera);
+    float3 F;
+    float3 diffuseTerm = DiffuseCalc(toLight, input.normal);
+    float3 specularTerm = MicrofacetBRDF(input.normal, toLight, dirToCamera, roughness, f0, F);
     
-    specularTerm *= any(diffuseTerm);
+    diffuseTerm = DiffuseEnergyConserve(diffuseTerm, F, metalness);
     
-    return (diffuseTerm + specularTerm) * Attenuate(light, input.wordPos);
+    return (diffuseTerm * surfaceColor + specularTerm) * light.intensity * light.color * Attenuate(light, input.wordPos);
 }
 
-float3 SpotLightCalc(Light light, float3 cameraPos, VertexToPixel input)
+float3 SpotLightCalc(Light light, float3 cameraPos, float3 surfaceColor, float roughness, float metalness, float3 f0, VertexToPixel input)
 {
     float3 lightToPixel = normalize(input.wordPos - light.position);
     float3 lightDir = normalize(light.direction);
@@ -100,7 +144,7 @@ float3 SpotLightCalc(Light light, float3 cameraPos, VertexToPixel input)
     float falloffRange = cosOuter - cosInner;
     // Linear falloff over the range, clamp 0-1, apply to light calc
     float spotTerm = saturate((cosOuter - pixelAngle) / falloffRange);
-    return PointLightCalc(light, cameraPos, input) * spotTerm;
+    return PointLightCalc(light, cameraPos, surfaceColor, roughness, metalness, f0, input) * spotTerm;
 }
 
 #endif

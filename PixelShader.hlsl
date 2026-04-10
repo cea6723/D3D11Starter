@@ -1,8 +1,10 @@
 
 #include "ShaderIncludes.hlsli"
 
-Texture2D SurfaceTexture : register(t0);
+Texture2D Albedo : register(t0);
 Texture2D NormalMap : register(t1);
+Texture2D RoughnessMap : register(t2);
+Texture2D MetalnessMap : register(t3);
 
 SamplerState BasicSampler : register(s0);
 
@@ -29,6 +31,12 @@ cbuffer ExternalData : register(b0)
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
+    input.uv = input.uv * uvScale + uvOffset;
+    
+    // ALBEDO
+    float4 surfaceColor = pow(Albedo.Sample(BasicSampler, input.uv), 2.2f);
+    
+    // NORMAL MAP
     // unpack normal from texture
     float3 unpackedNormal = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb * 2.0f - 1.0f);
     
@@ -40,36 +48,40 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     // transform normal from texture
     float3 finalNormal = mul(unpackedNormal, TBN);
-    
     input.normal = finalNormal;
-    input.uv = input.uv * uvScale + uvOffset;
     
-    float4 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv);
-    float3 ambientTerm = ambientColor.rgbr * surfaceColor * colorTint;
+    // ROUGHNESS MAP
+    float roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
     
-    float3 totalLight = 0;
+    // METALNESS MAP
+    float metalness = MetalnessMap.Sample(BasicSampler, input.uv).r;
     
+    // SPECULAR COLOR
+    float3 specularColor = lerp(F0_NON_METAL, surfaceColor.rgb, metalness);
+    
+    // LIGHT CALCULATIONS
+    float3 totalLight = 0;  
     for (int i = 0; i < 5; i++)
     {
         float3 lightCalc;
         switch (lights[i].type)
         {
             case 0: // DIRECTIONAL
-                lightCalc = DirectionLightCalc(lights[i], cameraPos, input);
+                lightCalc = DirectionLightCalc(lights[i], cameraPos, surfaceColor.rgb, roughness, metalness, specularColor, input);
                 break;
             case 1: // POINT
-                lightCalc = PointLightCalc(lights[i], cameraPos, input);
+                lightCalc = PointLightCalc(lights[i], cameraPos, surfaceColor.rgb, roughness, metalness, specularColor, input);
                 break;
             case 2: // SPOT
-                lightCalc = SpotLightCalc(lights[i], cameraPos, input);
+                lightCalc = SpotLightCalc(lights[i], cameraPos, surfaceColor.rgb, roughness, metalness, specularColor, input);
                 break;
                 
         }
         totalLight += lightCalc;
-    }
+    } 
     
-    totalLight *= surfaceColor.rgb;
-    totalLight += ambientTerm;
+    // gamma correction
+    totalLight = pow(totalLight, 1.0f / 2.2f);
     
     //return float4(input.tangent, 1);
     return float4(totalLight, 1);

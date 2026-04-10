@@ -271,26 +271,32 @@ void Game::LoadContent()
 	// load textures
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_wall_15_diff_4k.png").c_str(), 0, rockSRV.GetAddressOf());
-
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockNormalSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_wall_15_nor_dx_4k.png").c_str(), 0, rockNormalSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> rockRoughSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/rock_wall_15_rough_4k.png").c_str(), 0, rockRoughSRV.GetAddressOf());
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodSRV;
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bark_brown_02_diff_4k.png").c_str(), 0, woodSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_albedo.png").c_str(), 0, bronzeSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeNormalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_normals.png").c_str(), 0, bronzeNormalSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeRoughSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_roughness.png").c_str(), 0, bronzeRoughSRV.GetAddressOf());
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> concreteSRV;
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/gravel_concrete_03_diff_4k.png").c_str(), 0, concreteSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> noMetalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/no_metal.png").c_str(), 0, noMetalSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> allMetalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/all_metal.png").c_str(), 0, allMetalSRV.GetAddressOf());
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> personSRV;
-	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/person.png").c_str(), 0, personSRV.GetAddressOf());
+
+
 
 	// create materials
 	std::shared_ptr<Material> rockMaterial = std::make_shared<Material>("Rock", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
 	materials.push_back(rockMaterial);
-	std::shared_ptr<Material> woodMaterial = std::make_shared<Material>("Wood", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
-	materials.push_back(woodMaterial);
-	std::shared_ptr<Material> concreteDecalMaterial = std::make_shared<Material>("Concrete person decal", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, comboPixelShader);
-	materials.push_back(concreteDecalMaterial);
+	std::shared_ptr<Material> bronzeMaterial = std::make_shared<Material>("Bronze", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
+	materials.push_back(bronzeMaterial);
+
 	std::shared_ptr<Material> uvMaterial = std::make_shared<Material>("UVs", XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, uvPixelShader);
 	materials.push_back(uvMaterial);
 	std::shared_ptr<Material> normalMaterial = std::make_shared<Material>("Normals", XMFLOAT4(0.25f, 0.25f, 1.0f, 0.0f), vertexShader, normalPixelShader);
@@ -301,14 +307,15 @@ void Game::LoadContent()
 	// add textures and samplers to materials
 	rockMaterial->AddTextureSRV(0, rockSRV);
 	rockMaterial->AddTextureSRV(1, rockNormalSRV);
+	rockMaterial->AddTextureSRV(2, rockRoughSRV);
+	rockMaterial->AddTextureSRV(3, noMetalSRV);
 	rockMaterial->AddSampler(0, sampler);
 
-	woodMaterial->AddTextureSRV(0, woodSRV);
-	woodMaterial->AddSampler(0, sampler);
-
-	concreteDecalMaterial->AddTextureSRV(0, concreteSRV);
-	concreteDecalMaterial->AddTextureSRV(1, personSRV);
-	concreteDecalMaterial->AddSampler(0, sampler);
+	bronzeMaterial->AddTextureSRV(0, bronzeSRV);
+	bronzeMaterial->AddTextureSRV(1, bronzeNormalSRV);
+	bronzeMaterial->AddTextureSRV(2, bronzeRoughSRV);
+	bronzeMaterial->AddTextureSRV(3, allMetalSRV);
+	bronzeMaterial->AddSampler(0, sampler);
 
 	// Create Meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
@@ -320,7 +327,7 @@ void Game::LoadContent()
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad_double_sided.obj").c_str()));
 
 	// create GameEntities
-	for (int i = 0; i < 1; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		entities.push_back(GameEntity(meshes[0], materials[i]));
 		entities.push_back(GameEntity(meshes[1], materials[i]));
