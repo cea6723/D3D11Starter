@@ -34,7 +34,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     input.uv = input.uv * uvScale + uvOffset;
     
     // ALBEDO
-    float4 surfaceColor = Albedo.Sample(BasicSampler, input.uv); //pow(Albedo.Sample(BasicSampler, input.uv), 2.2f);
+    float4 surfaceColor = pow(Albedo.Sample(BasicSampler, input.uv), 2.2f);
     
     // NORMAL MAP
     // unpack normal from texture
