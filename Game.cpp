@@ -283,6 +283,22 @@ void Game::LoadContent()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> bronzeRoughSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/bronze_roughness.png").c_str(), 0, bronzeRoughSRV.GetAddressOf());
 
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> floorSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_albedo.png").c_str(), 0, floorSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> floorNormalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_normals.png").c_str(), 0, floorNormalSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> floorRoughSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_roughness.png").c_str(), 0, floorRoughSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> floorMetalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/floor_metal.png").c_str(), 0, floorMetalSRV.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_albedo.png").c_str(), 0, woodSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodNormalSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_normals.png").c_str(), 0, woodNormalSRV.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> woodRoughSRV;
+	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/wood_roughness.png").c_str(), 0, woodRoughSRV.GetAddressOf());
+
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> noMetalSRV;
 	CreateWICTextureFromFile(Graphics::Device.Get(), Graphics::Context.Get(), FixPath(L"../../Assets/Textures/no_metal.png").c_str(), 0, noMetalSRV.GetAddressOf());
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> allMetalSRV;
@@ -296,6 +312,10 @@ void Game::LoadContent()
 	materials.push_back(rockMaterial);
 	std::shared_ptr<Material> bronzeMaterial = std::make_shared<Material>("Bronze", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
 	materials.push_back(bronzeMaterial);
+	std::shared_ptr<Material> floorMaterial = std::make_shared<Material>("Floor", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
+	materials.push_back(floorMaterial);
+	std::shared_ptr<Material> woodMaterial = std::make_shared<Material>("Wood", XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f), vertexShader, pixelShader);
+	materials.push_back(woodMaterial);
 
 	std::shared_ptr<Material> uvMaterial = std::make_shared<Material>("UVs", XMFLOAT4(0.25f, 1.0f, 0.25f, 0.0f), vertexShader, uvPixelShader);
 	materials.push_back(uvMaterial);
@@ -317,6 +337,18 @@ void Game::LoadContent()
 	bronzeMaterial->AddTextureSRV(3, allMetalSRV);
 	bronzeMaterial->AddSampler(0, sampler);
 
+	floorMaterial->AddTextureSRV(0, floorSRV);
+	floorMaterial->AddTextureSRV(1, floorNormalSRV);
+	floorMaterial->AddTextureSRV(2, floorRoughSRV);
+	floorMaterial->AddTextureSRV(3, floorMetalSRV);
+	floorMaterial->AddSampler(0, sampler);
+
+	woodMaterial->AddTextureSRV(0, woodSRV);
+	woodMaterial->AddTextureSRV(1, woodNormalSRV);
+	woodMaterial->AddTextureSRV(2, woodRoughSRV);
+	woodMaterial->AddTextureSRV(3, noMetalSRV);
+	woodMaterial->AddSampler(0, sampler);
+
 	// Create Meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/sphere.obj").c_str()));
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/torus.obj").c_str()));
@@ -327,7 +359,7 @@ void Game::LoadContent()
 	meshes.push_back(std::make_shared<Mesh>(FixPath("../../Assets/Meshes/quad_double_sided.obj").c_str()));
 
 	// create GameEntities
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		entities.push_back(GameEntity(meshes[0], materials[i]));
 		entities.push_back(GameEntity(meshes[1], materials[i]));

@@ -53,26 +53,26 @@ float D_GGX(float3 n, float3 h, float roughness)
     float a = roughness * roughness;
     float a2 = max(a * a, MIN_ROUGHNESS);
     
-    float denomToSqaure = NdotH2 * (a2 - 1) + 1;
+    float denomToSqaure = NdotH2 * (a2 - 1.0f) + 1.0f;
     return a2 / (PI * denomToSqaure * denomToSqaure);
 }
 
 float G_SchlickGGX(float3 n, float3 v, float roughness)
 {
-    float k = pow(roughness + 1, 2) / 8.0f;
+    float k = pow(roughness + 1.0f, 2) / 8.0f;
     float NdotV = saturate(dot(n, v));
-    return 1 / (NdotV * (1 - k) + k);
+    return 1.0f / (NdotV * (1.0f - k) + k);
 }
 
 float3 F_Schlick(float3 v, float3 h, float3 f0)
 {
     float VdotH = saturate(dot(v, h));
-    return f0 + (1 - f0) * pow(1 - VdotH, 5);
+    return f0 + (1.0f - f0) * pow(1.0f - VdotH, 5);
 }
 
 float3 DiffuseEnergyConserve(float3 diffuse, float3 F, float metalness)
 {
-    return diffuse * (1 - F) * (1 - metalness);
+    return diffuse * (1.0f - F) * (1.0f - metalness);
 }
 
 // n: the normal (after normal mapping)
@@ -88,7 +88,7 @@ float3 MicrofacetBRDF(float3 n, float3 l, float3 v, float roughness, float3 f0, 
     outF = F_Schlick(v, h, f0);
     float G = G_SchlickGGX(n, v, roughness) * G_SchlickGGX(n, l, roughness);
     
-    return (D * outF * G) / 4;
+    return (D * outF * G) / 4.0f;
 }
 
 float3 DiffuseCalc(float3 lightDir, float3 normal)
