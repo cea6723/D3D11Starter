@@ -61,9 +61,9 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     // LIGHT CALCULATIONS
     float3 totalLight = 0;  
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 1; i++)
     {
-        float3 lightCalc;
+        float3 lightCalc = 0;
         switch (lights[i].type)
         {
             case 0: // DIRECTIONAL

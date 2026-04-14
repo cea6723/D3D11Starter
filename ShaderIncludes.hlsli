@@ -72,7 +72,7 @@ float3 F_Schlick(float3 v, float3 h, float3 f0)
 
 float3 DiffuseEnergyConserve(float3 diffuse, float3 F, float metalness)
 {
-    return diffuse * (1.0f - F) * (1.0f - metalness);
+    return diffuse * saturate(1.0f - F) * (1.0f - metalness);
 }
 
 // n: the normal (after normal mapping)
@@ -88,7 +88,7 @@ float3 MicrofacetBRDF(float3 n, float3 l, float3 v, float roughness, float3 f0, 
     outF = F_Schlick(v, h, f0);
     float G = G_SchlickGGX(n, v, roughness) * G_SchlickGGX(n, l, roughness);
     
-    return (D * outF * G) / 4.0f;
+    return saturate(dot(n, l)) * (D * outF * G) / 4.0f;
 }
 
 float3 DiffuseCalc(float3 lightDir, float3 normal)
