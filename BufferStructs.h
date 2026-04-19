@@ -8,6 +8,8 @@ struct VertexShaderData
 	DirectX::XMFLOAT4X4 worldInvTransMat;
 	DirectX::XMFLOAT4X4 viewMat;
 	DirectX::XMFLOAT4X4 projMat;
+	DirectX::XMFLOAT4X4 lightView;
+	DirectX::XMFLOAT4X4 lightProj;
 };
 
 struct SkyVertexShaderData

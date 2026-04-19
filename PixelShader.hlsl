@@ -5,8 +5,11 @@ Texture2D Albedo : register(t0);
 Texture2D NormalMap : register(t1);
 Texture2D RoughnessMap : register(t2);
 Texture2D MetalnessMap : register(t3);
+Texture2D ShadowMap : register(t4);
 
 SamplerState BasicSampler : register(s0);
+
+SamplerComparisonState ShadowSampler : register(s1);
 
 cbuffer ExternalData : register(b0)
 {
@@ -32,6 +35,25 @@ cbuffer ExternalData : register(b0)
 float4 main(VertexToPixel input) : SV_TARGET
 {
     input.uv = input.uv * uvScale + uvOffset;
+    
+    // SHADOW MAP
+    // perspective divide
+    input.shadowMapPos /= input.shadowMapPos.w;
+    
+    // convert normalized device cords to UVs
+    float2 shadowUV = input.shadowMapPos.xy * 0.5f + 0.5f;
+    shadowUV.y = 1 - shadowUV.y;
+    
+    // Get distances
+    float distToLight = input.shadowMapPos.z;
+    float shadowAmount = ShadowMap.SampleCmpLevelZero(
+        ShadowSampler,
+        shadowUV,
+        distToLight).r;
+    
+    //float distShadowMap = ShadowMap.Sample(BasicSampler, shadowUV).r;
+    //if (distShadowMap < distToLight)
+    //    return float4(0, 0, 0, 1);
     
     // ALBEDO
     float4 surfaceColor = pow(Albedo.Sample(BasicSampler, input.uv), 2.2f);
@@ -60,7 +82,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     float3 specularColor = lerp(F0_NON_METAL, surfaceColor.rgb, metalness);
     
     // LIGHT CALCULATIONS
-    float3 totalLight = 0;  
+    float3 totalLight = 0;
     for (int i = 0; i < 5; i++)
     {
         float3 lightCalc = 0;
@@ -68,6 +90,10 @@ float4 main(VertexToPixel input) : SV_TARGET
         {
             case 0: // DIRECTIONAL
                 lightCalc = DirectionLightCalc(lights[i], cameraPos, surfaceColor.rgb, roughness, metalness, specularColor, input);
+                if (i == 0)
+                {
+                    lightCalc *= shadowAmount;
+                }
                 break;
             case 1: // POINT
                 lightCalc = PointLightCalc(lights[i], cameraPos, surfaceColor.rgb, roughness, metalness, specularColor, input);
@@ -78,7 +104,7 @@ float4 main(VertexToPixel input) : SV_TARGET
                 
         }
         totalLight += lightCalc;
-    } 
+    }
     
     // gamma correction
     totalLight = pow(totalLight, 1.0f / 2.2f);

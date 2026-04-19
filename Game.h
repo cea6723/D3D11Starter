@@ -34,6 +34,8 @@ private:
 	void LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexShader, const std::wstring& filePath);
 	void LoadPixelShader(Microsoft::WRL::ComPtr<ID3D11PixelShader>& pixelShader, const std::wstring& filePath);
 	void LoadContent();
+	void ShadowMapSetUp();
+	void RenderShadowMap();
 	void ImGuiHelper(float deltaTime);
 	void BuildUI();
 
@@ -63,6 +65,15 @@ private:
 
 	// Lights
 	std::vector<Light> lights;
+
+	// Shadows
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowSRV;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowRasterizer;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowSampler;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> shadowVS;
+	DirectX::XMFLOAT4X4 lightViewMatrix;
+	DirectX::XMFLOAT4X4 lightProjectionMatrix;
 
 	// Sky
 	std::shared_ptr<Sky> sky;

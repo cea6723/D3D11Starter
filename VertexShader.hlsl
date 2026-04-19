@@ -8,6 +8,8 @@ cbuffer ExternalData : register(b0)
     matrix worldInvTransMat;
     matrix viewMat;
     matrix projMat;
+    matrix lightView;
+    matrix lightProj;
 }
 
 // --------------------------------------------------------
@@ -32,6 +34,10 @@ VertexToPixel main( VertexShaderInput input )
 	//   a perspective projection matrix, which we'll get to in the future).
     matrix wvp = mul(projMat, mul(viewMat, worldMat));
     output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
+	
+    matrix shadowWVP = mul(lightProj, mul(lightView, worldMat));
+    output.shadowMapPos = mul(shadowWVP, float4(input.localPosition, 1.0f));
+	
     output.uv = input.uv;
     output.normal = mul((float3x3)worldInvTransMat, input.normal);
     output.tangent = mul((float3x3) worldMat, input.tangent);
