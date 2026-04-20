@@ -180,8 +180,10 @@ void Game::FillAndBindNextConstantBuffer(void* data, unsigned int dataSizeInByte
 
 void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexShader, const std::wstring& filePath)
 {
-	ID3DBlob* vertexShaderBlob;
-	D3DReadFileToBlob(FixPath(filePath).c_str(), &vertexShaderBlob);
+	Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob;
+
+	//ID3DBlob* vertexShaderBlob;
+	D3DReadFileToBlob(FixPath(filePath).c_str(), vertexShaderBlob.GetAddressOf());
 	Graphics::Device->CreateVertexShader(
 		vertexShaderBlob->GetBufferPointer(),
 		vertexShaderBlob->GetBufferSize(),
@@ -209,6 +211,7 @@ void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexSh
 		inputElements[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 
 		// Create the input layout, verifying our description against actual shader code
+		inputLayout.Reset();
 		Graphics::Device->CreateInputLayout(
 			inputElements,							// An array of descriptions
 			4,										// How many elements in that array?
