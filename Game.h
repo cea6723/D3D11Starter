@@ -35,6 +35,8 @@ private:
 	void LoadPixelShader(Microsoft::WRL::ComPtr<ID3D11PixelShader>& pixelShader, const std::wstring& filePath);
 	void LoadContent();
 	void ShadowMapSetUp();
+	void PostProcessSetUp();
+	void ResizeRenderTarget();
 	void RenderShadowMap();
 	void ImGuiHelper(float deltaTime);
 	void BuildUI();
@@ -75,6 +77,18 @@ private:
 	DirectX::XMFLOAT4X4 lightViewMatrix;
 	DirectX::XMFLOAT4X4 lightProjectionMatrix;
 
+	// Resources that are shared among all post processes
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> ppSampler;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> ppVS;
+
+	// Resources that are tied to a particular post process
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> ppBlurPS;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> ppChromaticPS;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ppRTV1; // For rendering
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ppRTV2;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ppSRV1;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ppSRV2;// For sampling
+
 	// Sky
 	std::shared_ptr<Sky> sky;
 
@@ -88,5 +102,7 @@ private:
 	bool isDemoVisible = false;
 	int activeIndex;
 	int dragNum = 0;
+	int blurRadius = 1.0f;
+	float chromaticOffset[3] = { -0.004f, 0.01f, 0.01f };
 };
 

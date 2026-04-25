@@ -31,6 +31,7 @@ using namespace DirectX;
 Game::Game()
 {
 	LoadContent();
+	PostProcessSetUp();
 
 	// Initialize Lights
 	Light directionalLight1 = {};
@@ -46,33 +47,6 @@ Game::Game()
 	directionalLight2.color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	directionalLight2.intensity = 1.0f;
 	lights.push_back(directionalLight2);
-
-	/*
-	Light directionalLight3 = {};
-	directionalLight3.type = 0;
-	directionalLight3.direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
-	directionalLight3.color = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	directionalLight3.intensity = 1.0f;
-	lights.push_back(directionalLight3);
-
-	Light pointLight1 = {};
-	pointLight1.type = 1;
-	pointLight1.position = XMFLOAT3(1.0f, 0.0f, -1.0f);
-	pointLight1.color = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	pointLight1.intensity = 1.0f;
-	pointLight1.range = 10.0f;
-	lights.push_back(pointLight1);
-
-	Light spotLight1 = {};
-	spotLight1.type = 2;
-	spotLight1.position = XMFLOAT3(5.0f, 1.0f, 0.0f);
-	spotLight1.direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
-	spotLight1.color = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	spotLight1.intensity = 1.0f;
-	spotLight1.range = 5.0f;
-	spotLight1.spotOuterAngle = XM_PIDIV4;
-	spotLight1.spotInnerAngle = XM_PIDIV4 * 0.9f;
-	lights.push_back(spotLight1);*/
 
 	// Ring Constant Buffer
 	{
@@ -91,6 +65,42 @@ Game::Game()
 		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
 
 		Graphics::Device->CreateBuffer(&cbDesc, 0, constantBufferHeap.GetAddressOf());
+	}
+
+	// Input Layout
+	{
+		//Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob;
+
+		ID3DBlob* vertexShaderBlob;
+		D3DReadFileToBlob(FixPath(L"VertexShader.cso").c_str(), &vertexShaderBlob);
+
+		D3D11_INPUT_ELEMENT_DESC inputElements[4] = {};
+
+		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		inputElements[0].SemanticName = "POSITION";
+		inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
+		inputElements[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+		inputElements[1].SemanticName = "TEXCOORD";
+		inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
+		inputElements[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		inputElements[2].SemanticName = "NORMAL";
+		inputElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
+		inputElements[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+		inputElements[3].SemanticName = "TANGENT";
+		inputElements[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+
+		// Create the input layout, verifying our description against actual shader code
+		Graphics::Device->CreateInputLayout(
+			inputElements,							// An array of descriptions
+			4,										// How many elements in that array?
+			vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
+			vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
+			inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
+
+		Graphics::Context->IASetInputLayout(inputLayout.Get());
 	}
 
 	// Initialize ImGui itself & platform/renderer backends
@@ -180,45 +190,13 @@ void Game::FillAndBindNextConstantBuffer(void* data, unsigned int dataSizeInByte
 
 void Game::LoadVertexShader(Microsoft::WRL::ComPtr<ID3D11VertexShader>& vertexShader, const std::wstring& filePath)
 {
-	Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob;
-
-	//ID3DBlob* vertexShaderBlob;
-	D3DReadFileToBlob(FixPath(filePath).c_str(), vertexShaderBlob.GetAddressOf());
+	ID3DBlob* vertexShaderBlob;
+	D3DReadFileToBlob(FixPath(filePath).c_str(), &vertexShaderBlob);
 	Graphics::Device->CreateVertexShader(
 		vertexShaderBlob->GetBufferPointer(),
 		vertexShaderBlob->GetBufferSize(),
 		0,
 		vertexShader.GetAddressOf());
-
-	// Input Layout
-	{
-		D3D11_INPUT_ELEMENT_DESC inputElements[4] = {};
-
-		inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;	
-		inputElements[0].SemanticName = "POSITION";							
-		inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	
-
-		inputElements[1].Format = DXGI_FORMAT_R32G32_FLOAT;			
-		inputElements[1].SemanticName = "TEXCOORD";							
-		inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	
-
-		inputElements[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		inputElements[2].SemanticName = "NORMAL";
-		inputElements[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-
-		inputElements[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		inputElements[3].SemanticName = "TANGENT";
-		inputElements[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-
-		// Create the input layout, verifying our description against actual shader code
-		inputLayout.Reset();
-		Graphics::Device->CreateInputLayout(
-			inputElements,							// An array of descriptions
-			4,										// How many elements in that array?
-			vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
-			vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
-			inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
-	}
 }
 
 void Game::LoadPixelShader(Microsoft::WRL::ComPtr<ID3D11PixelShader>& pixelShader, const std::wstring& filePath)
@@ -260,6 +238,7 @@ void Game::LoadContent()
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> skyVertexShader;
 	LoadVertexShader(skyVertexShader, L"SkyVertexShader.cso");
 	LoadVertexShader(shadowVS, L"ShadowMapVS.cso");
+	LoadVertexShader(ppVS, L"FullscreenVS.cso");
 
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 	LoadPixelShader(pixelShader, L"PixelShader.cso");
@@ -273,6 +252,8 @@ void Game::LoadContent()
 	LoadPixelShader(comboPixelShader, L"ComboPS.cso");
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> skyPixelShader;
 	LoadPixelShader(skyPixelShader, L"SkyPixelShader.cso");
+	LoadPixelShader(ppBlurPS, L"PPBlurPS.cso");
+	LoadPixelShader(ppChromaticPS, L"PPChromaticPS.cso");
 
 
 	// load textures
@@ -374,13 +355,13 @@ void Game::LoadContent()
 
 	entities.push_back(GameEntity(meshes[4], rockMaterial));
 	entities[2].GetTransform()->MoveAbsolute(-5.0f, 1.5f, 0.0f);
-	
+
 	entities.push_back(GameEntity(meshes[2], bronzeMaterial));
 	entities[3].GetTransform()->MoveAbsolute(5.0f, 1.5f, 0.0f);
 
 	// create sky
 	// meshes[3] is cube
-	sky = std::make_shared<Sky>(meshes[3], sampler, skyPixelShader, skyVertexShader, 
+	sky = std::make_shared<Sky>(meshes[3], sampler, skyPixelShader, skyVertexShader,
 		FixPath(L"../../Assets/Textures/right.png").c_str(),
 		FixPath(L"../../Assets/Textures/left.png").c_str(),
 		FixPath(L"../../Assets/Textures/up.png").c_str(),
@@ -485,6 +466,75 @@ void Game::ShadowMapSetUp()
 	XMStoreFloat4x4(&lightProjectionMatrix, lightProj);
 }
 
+void Game::PostProcessSetUp()
+{
+	// sampler
+	D3D11_SAMPLER_DESC ppSampDesc = {};
+	ppSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	ppSampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	ppSampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	Graphics::Device->CreateSamplerState(&ppSampDesc, ppSampler.GetAddressOf());
+
+	ResizeRenderTarget();
+}
+
+void Game::ResizeRenderTarget()
+{
+	ppRTV1.Reset();
+	ppSRV1.Reset();
+	ppRTV2.Reset();
+	ppSRV2.Reset();
+
+	// Describe the texture we're creating
+	D3D11_TEXTURE2D_DESC textureDesc1 = {};
+	textureDesc1.Width = Window::Width();
+	textureDesc1.Height = Window::Height();
+	textureDesc1.ArraySize = 1;
+	textureDesc1.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc1.CPUAccessFlags = 0;
+	textureDesc1.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc1.MipLevels = 1;
+	textureDesc1.MiscFlags = 0;
+	textureDesc1.SampleDesc.Count = 1;
+	textureDesc1.SampleDesc.Quality = 0;
+	textureDesc1.Usage = D3D11_USAGE_DEFAULT;
+
+	// Create the resource (no need to track it after the views are created below)
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> ppTexture1;
+	Graphics::Device->CreateTexture2D(&textureDesc1, 0, ppTexture1.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> ppTexture2;
+	Graphics::Device->CreateTexture2D(&textureDesc1, 0, ppTexture2.GetAddressOf());
+
+	// Create Render Target View
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = textureDesc1.Format;
+	rtvDesc.Texture2D.MipSlice = 0;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	Graphics::Device->CreateRenderTargetView(
+		ppTexture1.Get(),
+		&rtvDesc,
+		ppRTV1.ReleaseAndGetAddressOf());
+
+	Graphics::Device->CreateRenderTargetView(
+		ppTexture2.Get(),
+		&rtvDesc,
+		ppRTV2.ReleaseAndGetAddressOf());
+
+	// Create Shader Resource View
+	Graphics::Device->CreateShaderResourceView(
+		ppTexture1.Get(),
+		0,
+		ppSRV1.ReleaseAndGetAddressOf());
+
+	Graphics::Device->CreateShaderResourceView(
+		ppTexture2.Get(),
+		0,
+		ppSRV2.ReleaseAndGetAddressOf());
+}
+
 void Game::RenderShadowMap()
 {
 	// render fresh info to shadow map
@@ -535,7 +585,6 @@ void Game::RenderShadowMap()
 		Graphics::BackBufferRTV.GetAddressOf(),
 		Graphics::DepthBufferDSV.Get());
 	Graphics::Context->RSSetState(0);
-
 }
 
 // --------------------------------------------------------
@@ -549,6 +598,7 @@ void Game::OnResize()
 		if (cameras[i] != nullptr) cameras[i]->UpdateProjMatrix(Window::AspectRatio());
 	}
 
+	ResizeRenderTarget();
 }
 
 void Game::ImGuiHelper(float deltaTime)
@@ -626,6 +676,20 @@ void Game::BuildUI()
 		if (ImGui::TreeNode("Shadows"))
 		{
 			ImGui::Image(shadowSRV.Get(), ImVec2(512, 512));
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Post Processes"))
+		{
+			if (ImGui::TreeNode("Blur"))
+			{
+				ImGui::SliderInt("Blur Radius", &blurRadius, 0.0f, 10.0f);
+				ImGui::TreePop();
+			}
+			if (ImGui::TreeNode("Chromatic Abberation"))
+			{
+				ImGui::SliderFloat3("RGB offset", &chromaticOffset[0], -0.01f, 0.01f);
+				ImGui::TreePop();
+			}
 			ImGui::TreePop();
 		}
 		if (ImGui::TreeNode("Meshes"))
@@ -769,11 +833,16 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Clear the back buffer (erase what's on screen) and depth buffer
 		Graphics::Context->ClearRenderTargetView(Graphics::BackBufferRTV.Get(), Game::bgColor);
+		Graphics::Context->ClearRenderTargetView(ppRTV1.Get(), Game::bgColor);
+		Graphics::Context->ClearRenderTargetView(ppRTV2.Get(), Game::bgColor);
+
 		Graphics::Context->ClearDepthStencilView(Graphics::DepthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+		RenderShadowMap();
+
+		// swap active render target
+		Graphics::Context->OMSetRenderTargets(1, ppRTV1.GetAddressOf(), Graphics::DepthBufferDSV.Get());
 	}
-
-	RenderShadowMap();
-
 
 	// DRAW geometry
 	// - These steps are generally repeated for EACH object you draw
@@ -833,6 +902,55 @@ void Game::Draw(float deltaTime, float totalTime)
 			0);
 
 		sky->Draw();
+
+		// *** POST PROCESSING ***
+		Graphics::Context->VSSetShader(ppVS.Get(), 0, 0);
+		Graphics::Context->PSSetSamplers(0, 1, ppSampler.GetAddressOf());
+
+		// Chromatic Abberation
+		{
+			Graphics::Context->OMSetRenderTargets(1, ppRTV2.GetAddressOf(), 0); // write
+			Graphics::Context->PSSetShaderResources(0, 1, ppSRV1.GetAddressOf()); // read
+			Graphics::Context->PSSetShader(ppChromaticPS.Get(), 0, 0);
+
+			struct ChromaticData
+			{
+				float redOffset;
+				float greenOffset;
+				float blueOffset;
+			};
+
+			ChromaticData chrData = {};
+			chrData.redOffset = chromaticOffset[0];
+			chrData.greenOffset = chromaticOffset[1];
+			chrData.blueOffset = chromaticOffset[2];
+			FillAndBindNextConstantBuffer(&chrData, sizeof(ChromaticData), D3D11_PIXEL_SHADER, 0);
+
+			Graphics::Context->Draw(3, 0);
+		}
+
+		// Blur
+		{
+			Graphics::Context->OMSetRenderTargets(1, Graphics::BackBufferRTV.GetAddressOf(), 0); // write
+			Graphics::Context->PSSetShaderResources(0, 1, ppSRV2.GetAddressOf()); // read
+			Graphics::Context->PSSetShader(ppBlurPS.Get(), 0, 0);
+
+			struct BlurData
+			{
+				int blurRadius;
+				float pixelWidth;
+				float pixelHeight;
+			};
+
+			BlurData blurData = {};
+			blurData.blurRadius = blurRadius;
+			blurData.pixelWidth = 1.0f / Window::Width();
+			blurData.pixelHeight = 1.0f / Window::Height();
+			FillAndBindNextConstantBuffer(&blurData, sizeof(BlurData), D3D11_PIXEL_SHADER, 0);
+
+			Graphics::Context->Draw(3, 0);
+		}
+
 	}
 
 	// We need to un-bind (deactivate) the shadow map as a 
